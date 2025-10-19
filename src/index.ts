@@ -1,65 +1,203 @@
-// Update src/server.ts
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import dotenv from 'dotenv';
-import { createServer } from 'http';
-
-// Load environment variables
-dotenv.config();
-
-// Import routes
-// import authRoutes from './routes/auth';
-// import playlistRoutes from './routes/playlists';
-// import syncRoutes from './routes/sync';
-import spotifyRoutes from './routes/spotify.js'; // Add this line
-
-// Import middleware
-// import { errorHandler } from './middleware/errorHandler';
-// import { logger } from './middleware/logger';
+import axios from 'axios';
+import { configDotenv } from 'dotenv';
 
 const app = express();
-const httpServer = createServer(app);
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
+
+configDotenv();
 
 // Middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true
-}));
-app.use(express.json());
-// app.use(logger);
+app.use(cors());
+app.use(express.json()); 
 
-// Routes
-// app.use('/api/auth', authRoutes);
-// app.use('/api/playlists', playlistRoutes);
-// app.use('/api/sync', syncRoutes);
-app.use('/api/spotify', spotifyRoutes); // Add this line
+// Store tokens (in production, use a database)
+let userTokens: Record<string, { access_token: string, refresh_token: string }> = {};
+
+// 1. Get Spotify Auth URL
+app.get('/api/auth/spotify', (req, res) => {
+    const clientId = process.env.SPOTIFY_CLIENT_ID;
+    const redirectUri = 'http://127.0.0.1:5000/api/auth/spotify/callback';
+    
+    const scopes = [
+        'user-read-private',
+        'user-read-email',
+        'playlist-read-private',
+        'user-library-read'
+    ].join(' ');
+    
+    const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    
+    res.json({ authUrl });
+});
+
+// 2. Handle Spotify Callback
+app.get('/api/auth/spotify/callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+
+        console.log('Received code:', code);
+        
+        if (!code) {
+            return res.redirect('http://localhost:3000?error=no_code');
+        }
+
+        const clientId = process.env.SPOTIFY_CLIENT_ID;
+        const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+        
+        // Get access token
+        const codeStr = Array.isArray(code) ? code[0] : typeof code === 'object' ? '' : code as string;
+        const tokenResponse = await axios.post('https://accounts.spotify.com/api/token',
+            `grant_type=authorization_code&code=${codeStr}&redirect_uri=http://127.0.0.1:5000/api/auth/spotify/callback&client_id=${clientId}&client_secret=${clientSecret}`,
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        const { access_token, refresh_token } = tokenResponse.data;
+        
+        // Store token (in production, use database)
+        const tokenId = Math.random().toString(36).substring(7);
+        userTokens[tokenId] = { access_token, refresh_token };
+        
+        // Redirect to frontend with token
+        res.redirect(`http://localhost:3000?token=${tokenId}`);
+        
+    } catch (error: any) {
+        console.error('Auth error:', error.response?.data || error.message);
+        res.redirect('http://localhost:3000?error=auth_failed');
+    }
+});
+
+// 3. Get Current User Profile
+app.get('/api/me', async (req, res) => {
+    console.log(userTokens)
+    try {
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!tokenId || !userTokens[tokenId]) {
+            return res.status(401).json({ error: 'Invalid or missing token' });
+        }
+
+        const accessToken = userTokens[tokenId].access_token;
+        
+        const response = await axios.get('https://api.spotify.com/v1/me', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        console.log(response.data);
+
+        res.json({
+            success: true,
+            user: {
+                id: response.data.id,
+                display_name: response.data.display_name,
+                email: response.data.email,
+                country: response.data.country,
+                followers: response.data.followers?.total,
+                image: response.data.images?.[0]?.url,
+                product: response.data.product
+            }
+        });
+
+    } catch (error: any) {
+        console.error('Spotify API error:', error.response?.data || error.message);
+        res.status(400).json({
+            error: error.response?.data?.error?.message || 'Failed to fetch user data'
+        });
+    }
+});
+
+// 4. Get User's Playlists
+app.get('/api/me/playlists', async (req, res) => {
+    try {
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!tokenId || !userTokens[tokenId]) {
+            return res.status(401).json({ error: 'Invalid or missing token' });
+        }
+
+        const accessToken = userTokens[tokenId].access_token;
+        
+        const response : any = await axios.get('https://api.spotify.com/v1/me/playlists?limit=20', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        const playlists = response.data;
+
+        console.log(playlists);
+
+        res.json({
+            success: true,
+            playlists,
+            total: response.data.total
+        });
+
+    } catch (error : any) {
+        console.error('Spotify API error:', error.response?.data || error.message);
+        res.status(400).json({
+            error: error.response?.data?.error?.message || 'Failed to fetch playlists'
+        });
+    }
+});
+
+// 5. Get User's Liked Songs
+app.get('/api/me/tracks', async (req, res) => {
+    try {
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!tokenId || !userTokens[tokenId]) {
+            return res.status(401).json({ error: 'Invalid or missing token' });
+        }
+
+        const accessToken = userTokens[tokenId].access_token;
+        
+        const response = await axios.get('https://api.spotify.com/v1/me/tracks?limit=20', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        console.log(response.data);
+
+        const tracks = response.data;
+
+        res.json({
+            success: true,
+            tracks,
+            total: response.data.total
+        });
+
+    } catch (error : any) {
+        console.error('Spotify API error:', error.response?.data || error.message);
+        res.status(400).json({
+            error: error.response?.data?.error?.message || 'Failed to fetch liked songs'
+        });
+    }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    message: 'Spotify API endpoints are ready! Use /api/spotify/*'
-  });
+    res.json({ 
+        status: 'OK', 
+        message: 'Spotify User API is running!',
+        endpoints: [
+            'GET /api/auth/spotify - Get auth URL',
+            'GET /api/me - Get user profile',
+            'GET /api/me/playlists - Get user playlists',
+            'GET /api/me/tracks - Get liked songs'
+        ]
+    });
 });
 
-// Error handling
-// app.use(errorHandler);
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+app.listen(PORT, () => {
+    console.log(`🚀 Backend server running on http://localhost:${PORT}`);
+    console.log(`🔐 Make sure to set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET environment variables`);
 });
-
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🎵 Spotify API endpoints available at /api/spotify`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-});
-
-export default app;
-
-// curl -X POST "https://accounts.spotify.com/api/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=client_credentials&client_id=efa6d134f2c14cdb8ecaf0c61dfc42fd&client_secret=611023fc18d24d72a727aca85090cb24"
