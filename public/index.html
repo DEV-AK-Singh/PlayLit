@@ -245,12 +245,38 @@
                 </button>
                 <div id="tracks"></div>
             </div>
+
+            <!-- Search for a song: -->
+            <div class="section">
+                <h2>🔍 Search for a song</h2>
+                <input type="text" id="searchInput" placeholder="Enter a song name.." 
+                style="width: 20em; padding: 10px; border-radius: 20px; outline: none; border: 1px solid #ccc;">
+                <button id="searchBtn" class="btn" onclick="searchTracks()">Search</button>
+                <button id="searchBtn" class="btn" onclick="initNewPlaylist()">Create Playlist</button>
+                <button id="searchBtn" class="btn" onclick="savePlaylist()">Save Playlist</button>
+                <div id="searchResults"></div>
+            </div>
         </div>
     </div>
 
     <script>
         const BACKEND_URL = 'http://localhost:5000';
         let currentToken = null;
+
+        let newPlaylist = [];
+
+        // Initiate new playlist
+        function initNewPlaylist() {
+            newPlaylist = [];
+            localStorage.setItem('newPlaylist', JSON.stringify(newPlaylist));
+        }
+
+        // Add track to new playlist
+        function addToNewPlaylist(id) {  
+            newPlaylist.push(id);
+            localStorage.setItem('newPlaylist', JSON.stringify(newPlaylist));
+            alert('Track added to playlist!');
+        }
 
         // Check URL for token after OAuth redirect
         function checkUrlForToken() {
@@ -362,15 +388,46 @@
                     }
                 });
                 
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayTracks(data.tracks, data.total);
+                const data = await response.json();  
+
+                if (data.success) { 
+                    displayTracks(data.tracks, data.tracks.length);
                 } else {
                     showError('tracks', data.error);
                 }
             } catch (error) {
                 showError('tracks', 'Failed to load liked songs: ' + error.message);
+            }
+        }
+ 
+        // Search for tracks
+        async function searchTracks() {
+            const query = document.getElementById('searchInput').value;
+            
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+            
+            showLoading('searchResults', 'Searching...');
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/search?query=${query}`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySearchTracks(data.tracks, data.tracks.length);
+                } else {
+                    showError('searchResults', data.error);
+                }
+
+            } catch (error) {
+                showError('searchResults', 'Failed to search for tracks: ' + error.message);
             }
         }
 
@@ -449,13 +506,16 @@
         }
 
         // Display tracks
-        function displayTracks(tracks, total) {
+        function displayTracks(tracks, total) {  
+
+            console.log(tracks, total);
+
             const tracksDiv = document.getElementById('tracks');
             
             if (tracks.length === 0) {
                 tracksDiv.innerHTML = '<div class="loading">No liked songs found</div>';
                 return;
-            }
+            } 
 
             tracksDiv.innerHTML = `
                 <div class="stats">
@@ -479,8 +539,8 @@
                         <div class="track-info">
                             <div class="track-name">${track.name}</div>
                             <div class="track-meta">
-                                ${track.artists.join(', ')} • ${track.album} • 
-                                ${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}
+                                ${track.artists.map(artist => artist.name).join(', ')} • ${track.album.name} • 
+                                ${Math.floor(track.duration / (60 * 1000))}:${(track.duration % (60)).toString().padStart(2, '0')}
                             </div>
                         </div>
                     </div>
@@ -488,11 +548,125 @@
             `;
         }
 
+        // Display search tracks
+        function displaySearchTracks(tracks, total) {  
+
+            console.log(tracks, total);
+
+            const tracksDiv = document.getElementById('searchResults');
+            
+            if (tracks.length === 0) {
+                tracksDiv.innerHTML = '<div class="loading">No search results found</div>';
+                return;
+            }
+
+            tracksDiv.innerHTML = `
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">${total}</div>
+                        <div class="stat-label">Total Search Results</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${tracks.length}</div>
+                        <div class="stat-label">Loaded</div>
+                    </div>
+                </div>
+                ${tracks.map(track => { 
+                  return `
+                    <div class="track search-track" id="${track.id}" style="cursor: pointer; hover: background-color: aliceblue">
+                        <div class="track-image">
+                            ${track.image ? 
+                                `<img src="${track.image}" alt="${track.name}">` : 
+                                '🎵'
+                            }
+                        </div>
+                        <div class="track-info">
+                            <div class="track-name">${track.name}</div>
+                            <div class="track-meta">
+                                ${track.artists.map(artist => artist.name).join(', ')} • ${track.album.name} • 
+                                ${Math.floor(track.duration / (60 * 1000))}:${(track.duration % (60)).toString().padStart(2, '0')}
+                            </div>
+                        </div>
+                    </div>
+                `
+                }).join('')}
+            `;  
+
+            const searchTracksClasses = document.getElementsByClassName('search-track'); 
+            for(let i = 0; i < searchTracksClasses.length; i++) {
+                searchTracksClasses[i].addEventListener('click', ()=> {
+                    addToNewPlaylist(searchTracksClasses[i].id);
+                });
+            }
+        }
+
+        // Add songs to playlist
+        async function addSongsToNewPlaylist(playlistId, songs) { 
+            fetch(`${BACKEND_URL}/api/playlists/${playlistId}/tracks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentToken}`
+                },
+                body: JSON.stringify({
+                    uris: songs.map(songId => "spotify:track:"+songId)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                alert('Song added to playlist successfully!');
+            })
+            .catch(error => {
+                console.error('Error adding song to playlist:', error);
+                alert('Failed to add song to playlist. Please try again.');
+            });
+        }
+
+        // Save playlist
+        function savePlaylist() {
+            const playlistName = prompt('Enter a name for your playlist:');
+            const playlistDescription = prompt('Enter a description for your playlist:');
+            const playlistPublic = confirm('Make this playlist public?');
+            if (playlistName) {
+                fetch(`${BACKEND_URL}/api/me/playlists`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        name: playlistName,
+                        description: playlistDescription,
+                        public: playlistPublic
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    const playlistId = data.playlist.id;
+                    console.log('Playlist saved successfully!');
+                    addSongsToNewPlaylist(playlistId, newPlaylist).then((data) => {
+                        console.log(data);
+                        alert('Playlist saved successfully!');
+                    }).catch(error => {
+                        console.error('Error saving playlist:', error);
+                        alert('Failed to save playlist. Please try again.');
+                    });
+                })
+                .catch(error => {
+                    console.error('Error saving playlist:', error);
+                    alert('Failed to save playlist. Please try again.');
+                });
+            }
+        }
+
         // Utility functions
         function showLoading(elementId, message) {
             document.getElementById(elementId).innerHTML = `<div class="loading">${message}</div>`;
         }
 
+        // Utility functions
         function showError(message, elementId = 'authStatus') {
             const element = document.getElementById(elementId);
             element.innerHTML = `<div class="error">${message}</div>`;
