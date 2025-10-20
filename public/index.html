@@ -503,7 +503,7 @@
                 <div id="createPlaylistResult"></div>
             </div>
             
-            <!-- Search -->
+            <!-- Search Section -->
             <div class="section">
                 <h2>🔍 Search Music</h2>
                 <div class="search-box">
@@ -516,10 +516,46 @@
                     <div class="loading">Enter a search query to find music</div>
                 </div>
             </div>
+
+            <!-- Queue Section -->
+            <div class="section" id="queueSection" style="display: none;">
+                <h2>📥 Selected Tracks 
+                    <span id="queueCount" style="font-size: 0.8em; color: #666; margin-left: 10px;">(0 tracks)</span>
+                </h2>
+                <div class="action-buttons">
+                    <button class="btn" id="createPlaylistFromQueueBtn" onclick="createPlaylistFromQueue()">
+                        🎵 Create Playlist from Selected
+                    </button>
+                    <button class="btn secondary" onclick="clearQueue()">
+                        🗑️ Clear All
+                    </button>
+                </div>
+                <div id="queueTracks">
+                    <div class="loading">No tracks selected yet</div>
+                </div>
+                
+                <!-- Add to Existing Playlist -->
+                <div id="addToPlaylistSection" style="margin-top: 20px; display: none;">
+                    <h3>➕ Add to Existing Playlist</h3>
+                    <div style="display: flex; gap: 15px; align-items: end;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="existingPlaylistSelect">Select Playlist</label>
+                            <select id="existingPlaylistSelect" class="form-input">
+                                <option value="">Choose a playlist...</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="addQueueToPlaylist()">
+                            ➕ Add to Playlist
+                        </button>
+                    </div>
+                    <div id="addToPlaylistResult"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        let newPlaylist = [];
         const BACKEND_URL = 'http://localhost:5000';
         let currentToken = null;
 
@@ -713,7 +749,11 @@
             }
         }
 
-        // Search music
+        // Global queue array to store selected tracks
+        let trackQueue = [];
+        let userPlaylists = [];
+
+        // Updated search music function
         async function searchMusic() {
             if (!currentToken) {
                 showError('searchResults', 'Please connect to YouTube first');
@@ -738,7 +778,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    displayTracks(data.data, data.total, 'searchResults');
+                    displaySearchResults(data.data, data.total);
                 } else {
                     showError('searchResults', data.error);
                 }
@@ -746,6 +786,433 @@
                 showError('searchResults', 'Failed to search: ' + error.message);
             }
         }
+
+        // Display search results with add buttons
+        function displaySearchResults(tracks, total) {
+            const searchResultsDiv = document.getElementById('searchResults');
+            
+            if (tracks.length === 0) {
+                searchResultsDiv.innerHTML = '<div class="loading">No results found</div>';
+                return;
+            }
+
+            searchResultsDiv.innerHTML = `
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">${total}</div>
+                        <div class="stat-label">Total Results</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${tracks.length}</div>
+                        <div class="stat-label">Displayed</div>
+                    </div>
+                </div>
+                <div class="track-list">
+                    ${tracks.map(track => `
+                        <div class="track-item">
+                            <div class="track-image">
+                                ${track.image ? 
+                                    `<img src="${track.image}" alt="${track.title}">` : 
+                                    '🎵'
+                                }
+                            </div>
+                            <div class="track-info" style="flex: 1;">
+                                <div class="track-name">${track.title}</div>
+                                <div class="track-meta">
+                                    ${track.artists.join(', ')} • ${track.album}
+                                    ${track.duration ? ` • ${formatDuration(track.duration)}` : ''}
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn" onclick="addToQueue('${track.id}', '${track.title.replace(/'/g, "\\'")}', '${track.artists.join(', ').replace(/'/g, "\\'")}', '${track.image || ''}')">
+                                    ➕ Add to Queue
+                                </button>
+                                <a href="${track.platformUrl}" target="_blank" class="btn secondary" style="text-decoration: none;">
+                                    🔗 Open
+                                </a>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Add track to queue
+        function addToQueue(trackId, title, artists, image) {
+            // Check if track already in queue
+            const existingTrack = trackQueue.find(track => track.id === trackId);
+            if (existingTrack) {
+                showNotification('Track already in queue!', 'warning');
+                return;
+            }
+
+            const track = {
+                id: trackId,
+                title: title,
+                artists: [artists],
+                image: image,
+                addedAt: new Date().toLocaleString()
+            };
+
+            trackQueue.push(track);
+            updateQueueDisplay();
+            showNotification('Track added to queue!', 'success');
+            
+            // Show queue section if hidden
+            document.getElementById('queueSection').style.display = 'block';
+        }
+
+        // Remove track from queue
+        function removeFromQueue(trackId) {
+            trackQueue = trackQueue.filter(track => track.id !== trackId);
+            updateQueueDisplay();
+            showNotification('Track removed from queue', 'info');
+        }
+
+        // Clear entire queue
+        function clearQueue() {
+            if (trackQueue.length === 0) return;
+            
+            if (confirm('Are you sure you want to clear all selected tracks?')) {
+                trackQueue = [];
+                updateQueueDisplay();
+                showNotification('Queue cleared', 'info');
+            }
+        }
+
+        // Update queue display
+        function updateQueueDisplay() {
+            const queueSection = document.getElementById('queueSection');
+            const queueCount = document.getElementById('queueCount');
+            const queueTracks = document.getElementById('queueTracks');
+            const createPlaylistBtn = document.getElementById('createPlaylistFromQueueBtn');
+            const addToPlaylistSection = document.getElementById('addToPlaylistSection');
+
+            // Update count
+            queueCount.textContent = `(${trackQueue.length} track${trackQueue.length !== 1 ? 's' : ''})`;
+
+            // Update queue display
+            if (trackQueue.length === 0) {
+                queueTracks.innerHTML = '<div class="loading">No tracks selected yet. Search for music and click "Add to Queue".</div>';
+                queueSection.style.display = 'none';
+                createPlaylistBtn.disabled = true;
+                addToPlaylistSection.style.display = 'none';
+            } else {
+                queueTracks.innerHTML = `
+                    <div class="track-list">
+                        ${trackQueue.map((track, index) => `
+                            <div class="track-item">
+                                <div class="track-image">
+                                    ${track.image ? 
+                                        `<img src="${track.image}" alt="${track.title}">` : 
+                                        '🎵'
+                                    }
+                                </div>
+                                <div class="track-info" style="flex: 1;">
+                                    <div class="track-name">${track.title}</div>
+                                    <div class="track-meta">
+                                        ${track.artists.join(', ')}
+                                        <br><small>Added: ${track.addedAt}</small>
+                                    </div>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="btn secondary" onclick="removeFromQueue('${track.id}')">
+                                        ❌ Remove
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                createPlaylistBtn.disabled = false;
+                
+                // Load playlists for dropdown if not already loaded
+                if (userPlaylists.length === 0) {
+                    loadUserPlaylistsForDropdown();
+                } else {
+                    updatePlaylistDropdown();
+                    addToPlaylistSection.style.display = 'block';
+                }
+            }
+        }
+
+        // Load user playlists for dropdown
+        async function loadUserPlaylistsForDropdown() {
+            if (!currentToken) return;
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/playlists`, {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    userPlaylists = data.data;
+                    updatePlaylistDropdown();
+                    document.getElementById('addToPlaylistSection').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load playlists for dropdown:', error);
+            }
+        }
+
+        // Update playlist dropdown
+        function updatePlaylistDropdown() {
+            const select = document.getElementById('existingPlaylistSelect');
+            select.innerHTML = '<option value="">Choose a playlist...</option>';
+            
+            userPlaylists.forEach(playlist => {
+                const option = document.createElement('option');
+                option.value = playlist.id;
+                option.textContent = `${playlist.name} (${playlist.tracks} tracks)`;
+                select.appendChild(option);
+            });
+        }
+
+        // Create new playlist from queue
+        async function createPlaylistFromQueue() {
+            if (trackQueue.length === 0) {
+                showNotification('No tracks in queue to create playlist', 'error');
+                return;
+            }
+
+            const playlistName = prompt('Enter playlist name:', `My Playlist ${new Date().toLocaleDateString()}`);
+            if (!playlistName) return;
+
+            const description = prompt('Enter playlist description (optional):', `Created on ${new Date().toLocaleString()}`);
+            const privacy = prompt('Enter privacy (public, private, or unlisted):', 'private');
+
+            if (!playlistName) {
+                showNotification('Playlist name is required', 'error');
+                return;
+            }
+
+            showNotification('Creating playlist and adding tracks...', 'info');
+
+            try {
+                // 1. Create the playlist
+                const createResponse = await fetch(`${BACKEND_URL}/api/playlists`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: playlistName,
+                        description: description || '',
+                        privacy: privacy || 'private'
+                    })
+                });
+                
+                const createData = await createResponse.json();
+                
+                if (!createData.success) {
+                    throw new Error(createData.error);
+                }
+
+                const playlistId = createData.data.id;
+                let addedCount = 0;
+                let errorCount = 0;
+
+                // 2. Add each track to the playlist
+                for (const track of trackQueue) {
+                    try {
+                        const addResponse = await fetch(`${BACKEND_URL}/api/playlists/${playlistId}/tracks`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${currentToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                videoId: track.id
+                            })
+                        });
+                        
+                        const addData = await addResponse.json();
+                        
+                        if (addData.success) {
+                            addedCount++;
+                        } else {
+                            errorCount++;
+                            console.error(`Failed to add track ${track.title}:`, addData.error);
+                        }
+                        
+                        // Small delay to avoid rate limiting
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`Error adding track ${track.title}:`, error);
+                    }
+                }
+
+                // 3. Show result
+                let message = `Playlist "${playlistName}" created successfully! `;
+                message += `Added ${addedCount} track${addedCount !== 1 ? 's' : ''}.`;
+                if (errorCount > 0) {
+                    message += ` ${errorCount} track${errorCount !== 1 ? 's' : ''} failed to add.`;
+                }
+                
+                showNotification(message, addedCount > 0 ? 'success' : 'warning');
+                
+                // 4. Clear queue and reload playlists
+                if (addedCount > 0) {
+                    trackQueue = [];
+                    updateQueueDisplay();
+                    loadPlaylists(); // Refresh playlists list
+                    loadUserPlaylistsForDropdown(); // Refresh dropdown
+                }
+
+            } catch (error) {
+                showNotification('Failed to create playlist: ' + error.message, 'error');
+            }
+        }
+
+        // Add queue tracks to existing playlist
+        async function addQueueToPlaylist() {
+            const playlistSelect = document.getElementById('existingPlaylistSelect');
+            const playlistId = playlistSelect.value;
+            
+            if (!playlistId) {
+                showNotification('Please select a playlist', 'error');
+                return;
+            }
+
+            if (trackQueue.length === 0) {
+                showNotification('No tracks in queue to add', 'error');
+                return;
+            }
+
+            const playlist = userPlaylists.find(p => p.id === playlistId);
+            if (!playlist) {
+                showNotification('Selected playlist not found', 'error');
+                return;
+            }
+
+            if (!confirm(`Add ${trackQueue.length} track${trackQueue.length !== 1 ? 's' : ''} to "${playlist.name}"?`)) {
+                return;
+            }
+
+            showNotification(`Adding tracks to "${playlist.name}"...`, 'info');
+
+            let addedCount = 0;
+            let errorCount = 0;
+
+            // Add each track to the playlist
+            for (const track of trackQueue) {
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/playlists/${playlistId}/tracks`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${currentToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            videoId: track.id
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        addedCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Failed to add track ${track.title}:`, data.error);
+                    }
+                    
+                    // Small delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Error adding track ${track.title}:`, error);
+                }
+            }
+
+            // Show result
+            let message = `Added ${addedCount} track${addedCount !== 1 ? 's' : ''} to "${playlist.name}".`;
+            if (errorCount > 0) {
+                message += ` ${errorCount} track${errorCount !== 1 ? 's' : ''} failed to add.`;
+            }
+            
+            showNotification(message, addedCount > 0 ? 'success' : 'warning');
+            
+            // Clear queue if successful
+            if (addedCount > 0) {
+                trackQueue = [];
+                updateQueueDisplay();
+                loadPlaylists(); // Refresh playlists list
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Remove existing notification
+            const existingNotification = document.getElementById('globalNotification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.id = 'globalNotification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                max-width: 400px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease;
+            `;
+
+            // Set background color based on type
+            switch (type) {
+                case 'success':
+                    notification.style.background = '#00cc00';
+                    break;
+                case 'error':
+                    notification.style.background = '#cc0000';
+                    break;
+                case 'warning':
+                    notification.style.background = '#cc9900';
+                    break;
+                default:
+                    notification.style.background = '#666';
+            }
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
 
         // Display user profile
         function displayUserProfile(user) {
