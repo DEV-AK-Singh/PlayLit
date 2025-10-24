@@ -316,7 +316,7 @@ app.get('/api/search', async (req, res) => {
        
         const searchQuery = encodeURIComponent(req.query.query as string);
         
-        const response = await axios.get(`https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=5`, {
+        const response = await axios.get(`https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=20`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`
             }

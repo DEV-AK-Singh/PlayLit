@@ -525,14 +525,11 @@ app.delete('/api/playlists/:playlistId/tracks/:itemId', async (req, res) => {
 
 // Utility function to parse ISO 8601 duration
 function parseDuration(duration: string) {
-    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-    
-    if (!match) return 0;
-    
+    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/); 
+    if (!match) return 0; 
     const hours = (match[1] ? parseInt(match[1]) : 0);
     const minutes = (match[2] ? parseInt(match[2]) : 0);
-    const seconds = (match[3] ? parseInt(match[3]) : 0);
-    
+    const seconds = (match[3] ? parseInt(match[3]) : 0); 
     return hours * 3600 + minutes * 60 + seconds;
 }
 
