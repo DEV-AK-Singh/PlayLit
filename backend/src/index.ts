@@ -252,7 +252,7 @@ app.get('/api/youtube/me/liked', async (req, res) => {
 app.get('/api/youtube/me/search', async (req, res) => {
     try {
         const tokenId = req.headers.authorization?.replace('Bearer ', '');
-        const { q, maxResults = 20 } = req.query;
+        const { q, limit: maxResults = 20 } = req.query;
         if (!tokenId || !userTokens[tokenId]) {
             return res.status(401).json({ error: 'Invalid or missing token' });
         }
@@ -696,7 +696,8 @@ app.get('/api/spotify/me/search', async (req, res) => {
         }
         const accessToken = userTokens[tokenId].access_token;
         const searchQuery = encodeURIComponent(req.query.query as string);
-        const response: any = await axios.get(`https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=20`, {
+        const limit = req.query.limit || 20;
+        const response: any = await axios.get(`https://api.spotify.com/v1/search?q=${searchQuery}&type=track&limit=${limit}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         }
         );

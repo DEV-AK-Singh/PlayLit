@@ -2,7 +2,15 @@ import Nothing from "./Nothing";
 import { useMyContext } from "./ContextUtil";
 import QueueTrackCard from "./QueueTrackCard";
 import { useState } from "react";
-import { addTracksToSpotifyPlaylist, addTracksToYoutubePlaylist, createSpotifyPlaylist, createYoutubePlaylist } from "../App";
+import {
+  addTracksToSpotifyPlaylist,
+  addTracksToYoutubePlaylist,
+  createSpotifyPlaylist,
+  createYoutubePlaylist,
+  loadMultipleSearchedSpotifyTracks,
+  loadMultipleSearchedYoutubeTracks,
+} from "../App";
+import PreviewPlaylistModal from "./PreviewPlaylistModal";
 
 export default function QueueTracks() {
   const [queueActive, setQueueActive] = useState(false);
@@ -16,56 +24,85 @@ export default function QueueTracks() {
   const youtubeToken = localStorage.getItem("youtubeToken") || "";
   const spotifyToken = localStorage.getItem("spotifyToken") || "";
 
+  const [loadMultipleQuery, setLoadMultipleQuery] = useState([] as any);
+  const [modal, setModal] = useState(false);
+
   const handleCreatePlaylist = async () => {
     // console.log(playlistName);
     // console.log(playlistDescription);
     // console.log(playlistPrivacy);
-    // console.log(playlistPlatform); 
-    if ( playlistPlatform === "spotify" && !spotifyToken) {
-      alert("Please connect to Spotify first.");
-      return;
-    }
-    if ( playlistPlatform === "youtube" && !youtubeToken) {
-      alert("Please connect to YouTube first.");
-      return;
-    }
-    if (playlistName === "") {
-      alert("Please enter a playlist name.");
-      return;
-    } 
-    const createdPlaylist =
-      playlistPlatform === "spotify"
-        ? await createSpotifyPlaylist(
-            playlistName,
-            playlistDescription,
-            playlistPrivacy,
-            spotifyToken
-          )
-        : await createYoutubePlaylist(
-            playlistName,
-            playlistDescription,
-            playlistPrivacy,
-            youtubeToken
-          );
-    const addedTracks =
-      playlistPlatform === "spotify"
-        ? await addTracksToSpotifyPlaylist(
-            createdPlaylist.id,
-            queueTracks.map((track) => track.id),
-            spotifyToken
-          )
-        : await addTracksToYoutubePlaylist(
-            createdPlaylist.id,
-            queueTracks.map((track) => track.id),
-            youtubeToken
-          );
-    console.log(createdPlaylist);
-    console.log(addedTracks);
-    setQueueActive(false); 
+    // console.log(playlistPlatform);
+
+    const queries = queueTracks.map((track) => {
+      const id = track.id;
+      const query = `${track.name}, ${track.artist}`;
+      return { id, query };
+    });
+    // const results = await loadMultipleSearchedYoutubeTracks(queries, youtubeToken);
+    const results = await loadMultipleSearchedSpotifyTracks(
+      queries,
+      spotifyToken
+    );
+    console.log(results);
+    setLoadMultipleQuery(results);
+    setModal(true);
+
+    // if ( playlistPlatform === "spotify" && !spotifyToken) {
+    //   alert("Please connect to Spotify first.");
+    //   return;
+    // }
+    // if ( playlistPlatform === "youtube" && !youtubeToken) {
+    //   alert("Please connect to YouTube first.");
+    //   return;
+    // }
+    // if (playlistName === "") {
+    //   alert("Please enter a playlist name.");
+    //   return;
+    // }
+    // const createdPlaylist =
+    //   playlistPlatform === "spotify"
+    //     ? await createSpotifyPlaylist(
+    //         playlistName,
+    //         playlistDescription,
+    //         playlistPrivacy,
+    //         spotifyToken
+    //       )
+    //     : await createYoutubePlaylist(
+    //         playlistName,
+    //         playlistDescription,
+    //         playlistPrivacy,
+    //         youtubeToken
+    //       );
+    // const addedTracks =
+    //   playlistPlatform === "spotify"
+    //     ? await addTracksToSpotifyPlaylist(
+    //         createdPlaylist.id,
+    //         queueTracks.map((track) => track.id),
+    //         spotifyToken
+    //       )
+    //     : await addTracksToYoutubePlaylist(
+    //         createdPlaylist.id,
+    //         queueTracks.map((track) => track.id),
+    //         youtubeToken
+    //       );
+    // console.log(createdPlaylist);
+    // console.log(addedTracks);
+    // setQueueActive(false);
   };
 
   return (
     <>
+      {
+        loadMultipleQuery && (
+          <PreviewPlaylistModal
+            isOpen={modal}
+            onClose={() => setModal(false)}
+            playlistName={playlistName}
+            searchResults={loadMultipleQuery}
+            onConfirm={() => setModal(false)}
+          />
+        )
+      }
       <div className="sticky top-0 z-10 bg-black">
         <div className="relative">
           <div className="flex justify-between items-center relative z-1 bg-black">

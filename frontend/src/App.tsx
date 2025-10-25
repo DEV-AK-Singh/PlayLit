@@ -3,6 +3,11 @@ import "./App.css";
 import Home from "./components/Home";
 import { useMyContext } from "./components/ContextUtil";
 
+export type QueryType = {
+  id: string;
+  query: string;
+};
+
 export type User = {
   id: string;
   display_name: string;
@@ -31,6 +36,10 @@ export type Playlist = {
   platform: string;
 };
 
+const cleanQuery = (query : string) => {
+  return query.replace(/[^\w\s]/g, ''); // Remove everything except letters, numbers, spaces
+};
+
 export const sortArrayByKey = (array: any[], key: string) => {
   return array.sort((a: any, b: any) => {
     const nameA = a[key].toLowerCase();
@@ -43,11 +52,12 @@ export const sortArrayByKey = (array: any[], key: string) => {
 
 export const loadSearchedYoutubeTracks = async (
   query: string,
-  youtubeToken: string
+  youtubeToken: string,
+  limit: number = 5
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/youtube/me/search?q=${query}`,
+      `http://localhost:5000/api/youtube/me/search?q=${cleanQuery(query)}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${youtubeToken}`,
@@ -56,20 +66,41 @@ export const loadSearchedYoutubeTracks = async (
     );
     const data = await response.json();
     console.log(data);
-    return sortArrayByKey(data.data, "name");
+    // return sortArrayByKey(data.data, "name");
+    return data.data;
   } catch (error) {
     console.error(error);
     return [];
   }
 };
 
+export const loadMultipleSearchedYoutubeTracks = async (
+  queries: QueryType[],
+  youtubeToken: string,
+  limit: number = 3
+) => {
+  const results = [] as any[];
+  queries.forEach(async (query: QueryType) => {
+    const youtubeTracks = await loadSearchedYoutubeTracks(cleanQuery(query.query), youtubeToken, limit);
+    results.push({
+      id: query.id,
+      query: cleanQuery(query.query),
+      tracks: youtubeTracks,
+    });
+    await new Promise(resolve => setTimeout(resolve, 1100));
+  });
+  Promise.all(results);
+  return results;
+};
+
 export const loadSearchedSpotifyTracks = async (
   query: string,
-  spotifyToken: string
+  spotifyToken: string,
+  limit: number = 5
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/spotify/me/search?query=${query}`,
+      `http://localhost:5000/api/spotify/me/search?query=${cleanQuery(query)}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${spotifyToken}`,
@@ -78,11 +109,31 @@ export const loadSearchedSpotifyTracks = async (
     );
     const data = await response.json();
     console.log(data);
-    return sortArrayByKey(data.data, "name");
+    // return sortArrayByKey(data.data, "name");
+    return data.data;
   } catch (error) {
     console.error(error);
     return [];
   }
+};
+
+export const loadMultipleSearchedSpotifyTracks = async (
+  queries: QueryType[],
+  spotifyToken: string,
+  limit: number = 3
+) => {
+  const results = [] as any[];
+  queries.forEach(async (query: QueryType) => {
+    const spotifyTracks = await loadSearchedSpotifyTracks(cleanQuery(query.query), spotifyToken, limit);
+    results.push({
+      id: query.id,
+      query: cleanQuery(query.query),
+      tracks: spotifyTracks,
+    });
+    await new Promise(resolve => setTimeout(resolve, 1100));
+  });
+  Promise.all(results);
+  return results;
 };
 
 export const loadSearchedTracks = async (
@@ -93,13 +144,14 @@ export const loadSearchedTracks = async (
   let youtubeTracks = [];
   let spotifyTracks = [];
   if (youtubeToken) {
-    youtubeTracks = await loadSearchedYoutubeTracks(query, youtubeToken);
+    youtubeTracks = await loadSearchedYoutubeTracks(cleanQuery(query), youtubeToken);
   }
   if (spotifyToken) {
-    spotifyTracks = await loadSearchedSpotifyTracks(query, spotifyToken);
+    spotifyTracks = await loadSearchedSpotifyTracks(cleanQuery(query), spotifyToken);
   }
   const tracks = [...youtubeTracks, ...spotifyTracks];
-  return sortArrayByKey(tracks, "name");
+  // return sortArrayByKey(tracks, "name");
+  return tracks;
 };
 
 export const loadYoutubePlaylistTracks = async (
