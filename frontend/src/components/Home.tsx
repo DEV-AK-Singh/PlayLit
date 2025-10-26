@@ -3,20 +3,45 @@ import SearchTracks from "./SearchTracks";
 import QueueTracks from "./QueueTracks";
 import LikedTracks from "./LikedTracks";
 
-export default function Home({connectYoutube, youtubeUser, connectSpotify, spotifyUser}: any) { 
+export default function Home({
+  connectYoutube,
+  youtubeUser,
+  connectSpotify,
+  spotifyUser,
+  loadBothLikedTracks,
+  loadBothPlaylists 
+}: any) {
   return (
     <>
       <header className="bg-white">
         <div className="mx-auto flex h-20 w-full items-center justify-between gap-8 px-4 sm:px-6 lg:px-8 bg-black">
-          <h1 className="text-3xl text-white font-extrabold">Music Manager</h1>
+          <h1 className="text-3xl text-white font-extrabold">Music Manager : { youtubeUser ? youtubeUser.display_name : "YT" } | { spotifyUser ? spotifyUser.display_name : "SP" }</h1>
           <div className="flex items-center justify-end md:justify-between">
             <div className="flex items-center gap-4">
               <div className="sm:flex sm:gap-4">
-                <button onClick={connectYoutube} className="block rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700">
+                <button
+                  onClick={connectYoutube}
+                  className="block rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                >
                   {youtubeUser ? "Connected YT!" : "Connect YouTube"}
                 </button>
-                <button onClick={connectSpotify} className="block rounded-full bg-green-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-700">
+                <button
+                  onClick={connectSpotify}
+                  className="block rounded-full bg-green-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-700"
+                >
                   {spotifyUser ? "Connected SP!" : "Connect Spotify"}
+                </button> 
+                <button
+                  onClick={loadBothPlaylists}
+                  className="block rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                >
+                  Load Playlists
+                </button> 
+                <button
+                  onClick={loadBothLikedTracks}
+                  className="block rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                >
+                  Load Liked Tracks
                 </button>
               </div>
             </div>

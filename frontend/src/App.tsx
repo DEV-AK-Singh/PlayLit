@@ -36,8 +36,8 @@ export type Playlist = {
   platform: string;
 };
 
-const cleanQuery = (query : string) => {
-  return query.replace(/[^\w\s]/g, ''); // Remove everything except letters, numbers, spaces
+const cleanQuery = (query: string) => {
+  return query.replace(/[^\w\s]/g, ""); // Remove everything except letters, numbers, spaces
 };
 
 export const sortArrayByKey = (array: any[], key: string) => {
@@ -57,7 +57,9 @@ export const loadSearchedYoutubeTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/youtube/me/search?q=${cleanQuery(query)}&limit=${limit}`,
+      `http://localhost:5000/api/youtube/me/search?q=${cleanQuery(
+        query
+      )}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${youtubeToken}`,
@@ -81,15 +83,18 @@ export const loadMultipleSearchedYoutubeTracks = async (
 ) => {
   const results = [] as any[];
   queries.forEach(async (query: QueryType) => {
-    const youtubeTracks = await loadSearchedYoutubeTracks(cleanQuery(query.query), youtubeToken, limit);
+    const youtubeTracks = await loadSearchedYoutubeTracks(
+      cleanQuery(query.query),
+      youtubeToken,
+      limit
+    );
     results.push({
       id: query.id,
       query: cleanQuery(query.query),
       tracks: youtubeTracks,
     });
-    await new Promise(resolve => setTimeout(resolve, 1100));
-  });
-  Promise.all(results);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }); 
   return results;
 };
 
@@ -100,7 +105,9 @@ export const loadSearchedSpotifyTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/spotify/me/search?query=${cleanQuery(query)}&limit=${limit}`,
+      `http://localhost:5000/api/spotify/me/search?query=${cleanQuery(
+        query
+      )}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${spotifyToken}`,
@@ -124,15 +131,18 @@ export const loadMultipleSearchedSpotifyTracks = async (
 ) => {
   const results = [] as any[];
   queries.forEach(async (query: QueryType) => {
-    const spotifyTracks = await loadSearchedSpotifyTracks(cleanQuery(query.query), spotifyToken, limit);
+    const spotifyTracks = await loadSearchedSpotifyTracks(
+      cleanQuery(query.query),
+      spotifyToken,
+      limit
+    );
     results.push({
       id: query.id,
       query: cleanQuery(query.query),
       tracks: spotifyTracks,
     });
-    await new Promise(resolve => setTimeout(resolve, 1100));
-  });
-  Promise.all(results);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }); 
   return results;
 };
 
@@ -144,10 +154,16 @@ export const loadSearchedTracks = async (
   let youtubeTracks = [];
   let spotifyTracks = [];
   if (youtubeToken) {
-    youtubeTracks = await loadSearchedYoutubeTracks(cleanQuery(query), youtubeToken);
+    youtubeTracks = await loadSearchedYoutubeTracks(
+      cleanQuery(query),
+      youtubeToken
+    );
   }
   if (spotifyToken) {
-    spotifyTracks = await loadSearchedSpotifyTracks(cleanQuery(query), spotifyToken);
+    spotifyTracks = await loadSearchedSpotifyTracks(
+      cleanQuery(query),
+      spotifyToken
+    );
   }
   const tracks = [...youtubeTracks, ...spotifyTracks];
   // return sortArrayByKey(tracks, "name");
@@ -253,6 +269,7 @@ export const addTracksToYoutubePlaylist = async (
   youtubeToken: string
 ) => {
   try {
+    console.log(trackIds);
     const response = await fetch(
       `http://localhost:5000/api/youtube/me/playlists/${playlistId}/tracks`,
       {
@@ -520,36 +537,52 @@ function App() {
     loadSpotifyProfile();
   }, [youtubeToken, spotifyToken]);
 
-  useEffect(() => {
-    if (youtubeUser) {
-      loadYoutubePlaylists();
-      loadYoutubeLikedTracks();
-    }
-    if (spotifyUser) {
-      loadSpotifyPlaylists();
-      loadSpotifyLikedTracks();
-    }
-  }, [youtubeUser, spotifyUser]);
+  // useEffect(() => {
+  //   if (youtubeUser) {
+  //     loadYoutubePlaylists();
+  //     loadYoutubeLikedTracks();
+  //   }
+  //   if (spotifyUser) {
+  //     loadSpotifyPlaylists();
+  //     loadSpotifyLikedTracks();
+  //   }
+  // }, [youtubeUser, spotifyUser]);
+ 
+  const loadBothPlaylists = () => {
+    loadYoutubePlaylists();
+    loadSpotifyPlaylists();
+  };
+
+  const loadBothLikedTracks = () => {
+    loadYoutubeLikedTracks();
+    loadSpotifyLikedTracks();
+  };
 
   useEffect(() => {
-    setLikedTracks(
-      sortArrayByKey([...youtubeLikedTracks, ...spotifyLikedTracks], "name")
-    );
+    if ( youtubeLikedTracks || spotifyLikedTracks ){
+      setLikedTracks(
+        sortArrayByKey([...youtubeLikedTracks, ...spotifyLikedTracks], "name")
+      );
+    }
   }, [youtubeLikedTracks, spotifyLikedTracks]);
 
   useEffect(() => {
-    setMyPlaylists(
-      sortArrayByKey([...youtubePlaylists, ...spotifyPlaylists], "name")
-    );
+    if ( youtubePlaylists || spotifyPlaylists ){
+      setMyPlaylists(
+        sortArrayByKey([...youtubePlaylists, ...spotifyPlaylists], "name")
+      );
+    }
   }, [youtubePlaylists, spotifyPlaylists]);
 
   return (
     <>
-      <Home
+      <Home  
         connectYoutube={connectYoutube}
         youtubeUser={youtubeUser}
         connectSpotify={connectSpotify}
         spotifyUser={spotifyUser}
+        loadBothLikedTracks={loadBothLikedTracks}
+        loadBothPlaylists={loadBothPlaylists}  
       />
     </>
   );

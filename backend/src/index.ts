@@ -406,31 +406,22 @@ app.post('/api/youtube/me/playlists/:playlistId/track', async (req, res) => {
 // Y10. Add Tracks to YouTube Playlist
 app.post('/api/youtube/me/playlists/:playlistId/tracks', async (req, res) => {
     try {
-        const tokenId = req.headers.authorization?.replace('Bearer ', '');
-        const concurrency = 1
+        const tokenId = req.headers.authorization?.replace('Bearer ', ''); 
         const { playlistId } = req.params;
-        const { videoIds } = req.body; 
+        const { videoIds } : { videoIds: string[] } = req.body;
         if (!tokenId || !userTokens[tokenId]) {
             return res.status(401).json({ error: 'Invalid or missing token' });
         }
         if (!videoIds) {
             return res.status(400).json({ error: 'Video IDs is required' });
-        } 
+        }
         const accessToken = userTokens[tokenId].access_token;
-        const batches = [] 
-        for (let i = 0; i < videoIds.length; i += concurrency) {
-            batches.push(videoIds.slice(i, i + concurrency));
-        } 
-        const results = []; 
-        for (const batch of batches) {
-            const batchPromises = batch.map((videoId : string) =>
-                fetch('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
+        const results = [];  
+        try {
+            for (let i=0; i<videoIds.length; i++) { 
+                const videoId = videoIds[i];
+                const response = await axios.post('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet',
+                    {
                         snippet: {
                             playlistId: playlistId,
                             resourceId: {
@@ -438,17 +429,23 @@ app.post('/api/youtube/me/playlists/:playlistId/tracks', async (req, res) => {
                                 videoId: videoId
                             }
                         }
-                    })
-                }).then(response => response.json())
-                    .then(data => ({ videoId, success: true, data }))
-                    .catch(error => ({ videoId, success: false, error }))
-            ); 
-            const batchResults = await Promise.all(batchPromises);
-            results.push(...batchResults); 
-            // Delay between batches
-            if (batches.indexOf(batch) < batches.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-            }
+                    },
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                const trackData = response.data;
+                results.push({ videoId, success: true, data: trackData });
+                if (i < videoIds.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            } 
+        } catch (error) {
+            console.log(error);
+            results.push({ success: false, error });
         }
         console.log(results);
         res.json({

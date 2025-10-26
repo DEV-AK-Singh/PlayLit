@@ -33,32 +33,76 @@ export default function QueueTracks() {
     // console.log(playlistPrivacy);
     // console.log(playlistPlatform);
 
-    const queries = queueTracks.map((track) => {
+    if (playlistPlatform === "spotify" && !spotifyToken) {
+      alert("Please connect to Spotify first.");
+      setQueueActive(false);
+      return;
+    }
+
+    if (playlistPlatform === "youtube" && !youtubeToken) {
+      alert("Please connect to YouTube first.");
+      setQueueActive(false);
+      return;
+    }
+
+    if (playlistName === "") {
+      alert("Please enter a playlist name.");
+      setQueueActive(false);
+      return;
+    }
+
+    const newQueue = queueTracks.filter((track) => track.platform == playlistPlatform); 
+
+    const queries = newQueue.map((track) => {
       const id = track.id;
       const query = `${track.name}, ${track.artist}`;
       return { id, query };
     });
-    // const results = await loadMultipleSearchedYoutubeTracks(queries, youtubeToken);
-    const results = await loadMultipleSearchedSpotifyTracks(
-      queries,
-      spotifyToken
-    );
-    console.log(results);
-    setLoadMultipleQuery(results);
-    setModal(true);
 
-    // if ( playlistPlatform === "spotify" && !spotifyToken) {
-    //   alert("Please connect to Spotify first.");
-    //   return;
-    // }
-    // if ( playlistPlatform === "youtube" && !youtubeToken) {
-    //   alert("Please connect to YouTube first.");
-    //   return;
-    // }
-    // if (playlistName === "") {
-    //   alert("Please enter a playlist name.");
-    //   return;
-    // }
+    let results = [] as any[];
+    let createdPlaylist = {} as any;
+    let addedTracks = {} as any;
+
+    if (playlistPlatform === "youtube" && youtubeToken) {
+      results = await loadMultipleSearchedYoutubeTracks(queries, youtubeToken);
+      createdPlaylist = await createYoutubePlaylist(
+        playlistName,
+        playlistDescription,
+        playlistPrivacy,
+        youtubeToken
+      );
+      addedTracks = await addTracksToYoutubePlaylist(
+        createdPlaylist.id,
+        newQueue.map((track) => track.id),
+        youtubeToken
+      );
+    } else if (playlistPlatform === "spotify" && spotifyToken) {
+      results = await loadMultipleSearchedSpotifyTracks(queries, spotifyToken);
+      createdPlaylist = await createSpotifyPlaylist(
+        playlistName,
+        playlistDescription,
+        playlistPrivacy,
+        spotifyToken
+      );
+      addedTracks = await addTracksToSpotifyPlaylist(
+        createdPlaylist.id,
+        newQueue.map((track) => track.id),
+        spotifyToken
+      );
+    }
+
+    setQueueActive(false);
+
+    console.log(results);
+    console.log(createdPlaylist);
+    console.log(addedTracks);
+
+    // const results = await loadMultipleSearchedYoutubeTracks(queries, youtubeToken);
+    // const results = await loadMultipleSearchedSpotifyTracks(queries, spotifyToken);
+    // console.log(results);
+    // setLoadMultipleQuery(results);
+    // setModal(true);
+
     // const createdPlaylist =
     //   playlistPlatform === "spotify"
     //     ? await createSpotifyPlaylist(
@@ -73,6 +117,7 @@ export default function QueueTracks() {
     //         playlistPrivacy,
     //         youtubeToken
     //       );
+
     // const addedTracks =
     //   playlistPlatform === "spotify"
     //     ? await addTracksToSpotifyPlaylist(
@@ -85,6 +130,7 @@ export default function QueueTracks() {
     //         queueTracks.map((track) => track.id),
     //         youtubeToken
     //       );
+
     // console.log(createdPlaylist);
     // console.log(addedTracks);
     // setQueueActive(false);
@@ -92,7 +138,7 @@ export default function QueueTracks() {
 
   return (
     <>
-      {
+      {/* {
         loadMultipleQuery && (
           <PreviewPlaylistModal
             isOpen={modal}
@@ -102,7 +148,7 @@ export default function QueueTracks() {
             onConfirm={() => setModal(false)}
           />
         )
-      }
+      } */}
       <div className="sticky top-0 z-10 bg-black">
         <div className="relative">
           <div className="flex justify-between items-center relative z-1 bg-black">
