@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'your-app-backend',
+    name: 'playlit-server',
     script: './dist/index.js',
     instances: 'max',
     exec_mode: 'cluster',
