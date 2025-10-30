@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'playlit-server',
     script: './dist/index.js',
-    instances: 'max',
+    instances: 1,
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
