@@ -63,7 +63,7 @@ export const loadSearchedYoutubeTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/youtube/me/search?q=${cleanQuery(
+      `/api/youtube/me/search?q=${cleanQuery(
         query
       )}&limit=${limit}`,
       {
@@ -110,7 +110,7 @@ export const loadSearchedSpotifyTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/spotify/me/search?query=${cleanQuery(
+      `/api/spotify/me/search?query=${cleanQuery(
         query
       )}&limit=${limit}`,
       {
@@ -193,7 +193,7 @@ export const loadYoutubePlaylistTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/youtube/me/playlists/${playlistId}/tracks`,
+      `/api/youtube/me/playlists/${playlistId}/tracks`,
       {
         headers: {
           Authorization: `Bearer ${youtubeToken}`,
@@ -215,7 +215,7 @@ export const loadSpotifyPlaylistTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/spotify/me/playlists/${playlistId}/tracks`,
+      `/api/spotify/me/playlists/${playlistId}/tracks`,
       {
         headers: {
           Authorization: `Bearer ${spotifyToken}`,
@@ -257,7 +257,7 @@ export const createYoutubePlaylist = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/youtube/me/playlists`,
+      `/api/youtube/me/playlists`,
       {
         method: "POST",
         headers: {
@@ -288,7 +288,7 @@ export const addTracksToYoutubePlaylist = async (
   try {
     console.log(trackIds);
     const response = await fetch(
-      `http://localhost:5000/api/youtube/me/playlists/${playlistId}/tracks`,
+      `/api/youtube/me/playlists/${playlistId}/tracks`,
       {
         method: "POST",
         headers: {
@@ -322,7 +322,7 @@ export const createSpotifyPlaylist = async (
       return [];
     }
     const response = await fetch(
-      `http://localhost:5000/api/spotify/me/playlists`,
+      `/api/spotify/me/playlists`,
       {
         method: "POST",
         headers: {
@@ -353,7 +353,7 @@ export const addTracksToSpotifyPlaylist = async (
 ) => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/spotify/me/playlists/${playlistId}/tracks`,
+      `/api/spotify/me/playlists/${playlistId}/tracks`,
       {
         method: "POST",
         headers: {
@@ -392,7 +392,7 @@ export const deletePlaylist = async (
     console.log(tracksUriSpotify);
     try {
       const responseDelete = await fetch(
-        `http://localhost:5000/api/spotify/me/playlists/${playlistId}/tracks`,
+        `/api/spotify/me/playlists/${playlistId}/tracks`,
         {
           method: "DELETE",
           body: JSON.stringify({ trackUris: tracksUriSpotify }),
@@ -404,7 +404,7 @@ export const deletePlaylist = async (
       );
       const deleteData = await responseDelete.json();
       const responseUnfollow = await fetch(
-        `http://localhost:5000/api/spotify/me/playlists/${playlistId}/followers`,
+        `/api/spotify/me/playlists/${playlistId}/followers`,
         {
           method: "DELETE",
           headers: {
@@ -422,7 +422,7 @@ export const deletePlaylist = async (
   } else if (platform === "youtube" && youtubeToken) {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/youtube/me/playlists/${playlistId}`,
+        `/api/youtube/me/playlists/${playlistId}`,
         {
           method: "DELETE",
           headers: {
@@ -463,7 +463,7 @@ function App() {
 
   const connectYoutube = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/youtube");
+      const response = await fetch("/api/auth/youtube");
       const data = await response.json();
       window.location.href = data.authUrl;
     } catch (error) {
@@ -488,7 +488,7 @@ function App() {
 
   const loadYoutubeProfile = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/youtube/me", {
+      const response = await fetch("/api/youtube/me", {
         headers: {
           Authorization: `Bearer ${youtubeToken}`,
         },
@@ -505,7 +505,7 @@ function App() {
   const loadYoutubePlaylists = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/youtube/me/playlists",
+        "/api/youtube/me/playlists",
         {
           headers: {
             Authorization: `Bearer ${youtubeToken}`,
@@ -523,7 +523,7 @@ function App() {
   const loadYoutubeLikedTracks = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/youtube/me/liked",
+        "/api/youtube/me/liked",
         {
           headers: {
             Authorization: `Bearer ${youtubeToken}`,
@@ -540,7 +540,7 @@ function App() {
 
   const connectSpotify = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/spotify");
+      const response = await fetch("/api/auth/spotify");
       const data = await response.json();
       window.location.href = data.authUrl;
     } catch (error) {
@@ -565,7 +565,7 @@ function App() {
 
   const loadSpotifyProfile = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/spotify/me", {
+      const response = await fetch("/api/spotify/me", {
         headers: {
           Authorization: `Bearer ${spotifyToken}`,
         },
@@ -582,7 +582,7 @@ function App() {
   const loadSpotifyPlaylists = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/spotify/me/playlists",
+        "/api/spotify/me/playlists",
         {
           headers: {
             Authorization: `Bearer ${spotifyToken}`,
@@ -600,7 +600,7 @@ function App() {
   const loadSpotifyLikedTracks = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5000/api/spotify/me/liked",
+        "/api/spotify/me/liked",
         {
           headers: {
             Authorization: `Bearer ${spotifyToken}`,
