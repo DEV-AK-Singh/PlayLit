@@ -9,6 +9,7 @@ import {
   createYoutubePlaylist,
   loadMultipleSearchedSpotifyTracks,
   loadMultipleSearchedYoutubeTracks,
+  type Track,
 } from "../App";
 import PreviewPlaylistModal from "./PreviewPlaylistModal";
 
@@ -22,195 +23,187 @@ export default function QueueTracks() {
   const [playlistPlatform, setPlaylistPlatform] = useState("spotify");
 
   const youtubeToken = localStorage.getItem("youtubeToken") || "";
-  const spotifyToken = localStorage.getItem("spotifyToken") || "";
+  const spotifyToken = localStorage.getItem("spotifyToken") || ""; 
 
-  const [loadMultipleQuery, setLoadMultipleQuery] = useState([] as any);
+  const [finalSearchedTracks, setFinalSearchedTracks] = useState(
+    [] as Track[][]
+  ); 
+
   const [modal, setModal] = useState(false);
 
-  const handleCreatePlaylist = async () => {
-    // console.log(playlistName);
-    // console.log(playlistDescription);
-    // console.log(playlistPrivacy);
-    // console.log(playlistPlatform);
-
+  const handlePlaylistPreview = async () => {
     if (playlistPlatform === "spotify" && !spotifyToken) {
       alert("Please connect to Spotify first.");
       setQueueActive(false);
       return;
     }
-
     if (playlistPlatform === "youtube" && !youtubeToken) {
       alert("Please connect to YouTube first.");
       setQueueActive(false);
       return;
     }
-
     if (playlistName === "") {
       alert("Please enter a playlist name.");
       setQueueActive(false);
       return;
     }
-
-    const newQueue = queueTracks.filter((track) => track.platform == playlistPlatform); 
-
-    const queries = newQueue.map((track) => {
+    const otherPlatformQueue: Track[] = queueTracks.filter(
+      (track) => track.platform != playlistPlatform
+    );
+    const currentPlatformQueue: Track[] = queueTracks.filter(
+      (track) => track.platform == playlistPlatform
+    );
+    const queries = otherPlatformQueue.map((track) => {
       const id = track.id;
       const query = `${track.name}, ${track.artist}`;
       return { id, query };
     });
-
-    let results = [] as any[];
-    let createdPlaylist = {} as any;
-    let addedTracks = {} as any;
-
     if (playlistPlatform === "youtube" && youtubeToken) {
-      results = await loadMultipleSearchedYoutubeTracks(queries, youtubeToken);
-      createdPlaylist = await createYoutubePlaylist(
+      const results = await loadMultipleSearchedYoutubeTracks(
+        queries,
+        youtubeToken
+      );
+      setFinalSearchedTracks([
+        ...currentPlatformQueue.map((track) => [track]),
+        ...results.map((result) => result.tracks),
+      ]); 
+    } else if (playlistPlatform === "spotify" && spotifyToken) {
+      const results = await loadMultipleSearchedSpotifyTracks(
+        queries,
+        spotifyToken
+      );
+      setFinalSearchedTracks([
+        ...currentPlatformQueue.map((track) => [track]),
+        ...results.map((result) => result.tracks),
+      ]); 
+    }
+    setQueueActive(!queueActive);
+    setModal(true);
+  };
+
+  const savePlaylist = async (
+    platform: string,
+    finalSelectedTracks: Track[]
+  ) => {
+    if (platform === "youtube" && youtubeToken) {
+      const createdPlaylist = await createYoutubePlaylist(
         playlistName,
         playlistDescription,
         playlistPrivacy,
         youtubeToken
       );
-      addedTracks = await addTracksToYoutubePlaylist(
+      await addTracksToYoutubePlaylist(
         createdPlaylist.id,
-        newQueue.map((track) => track.id),
+        finalSelectedTracks.map((track) => track.id),
         youtubeToken
       );
-    } else if (playlistPlatform === "spotify" && spotifyToken) {
-      results = await loadMultipleSearchedSpotifyTracks(queries, spotifyToken);
-      createdPlaylist = await createSpotifyPlaylist(
+    } else if (platform === "spotify" && spotifyToken) {
+      const createdPlaylist = await createSpotifyPlaylist(
         playlistName,
         playlistDescription,
         playlistPrivacy,
         spotifyToken
       );
-      addedTracks = await addTracksToSpotifyPlaylist(
+      await addTracksToSpotifyPlaylist(
         createdPlaylist.id,
-        newQueue.map((track) => track.id),
+        finalSelectedTracks.map((track) => track.id),
         spotifyToken
       );
     }
-
     setQueueActive(false);
-
-    console.log(results);
-    console.log(createdPlaylist);
-    console.log(addedTracks);
-
-    // const results = await loadMultipleSearchedYoutubeTracks(queries, youtubeToken);
-    // const results = await loadMultipleSearchedSpotifyTracks(queries, spotifyToken);
-    // console.log(results);
-    // setLoadMultipleQuery(results);
-    // setModal(true);
-
-    // const createdPlaylist =
-    //   playlistPlatform === "spotify"
-    //     ? await createSpotifyPlaylist(
-    //         playlistName,
-    //         playlistDescription,
-    //         playlistPrivacy,
-    //         spotifyToken
-    //       )
-    //     : await createYoutubePlaylist(
-    //         playlistName,
-    //         playlistDescription,
-    //         playlistPrivacy,
-    //         youtubeToken
-    //       );
-
-    // const addedTracks =
-    //   playlistPlatform === "spotify"
-    //     ? await addTracksToSpotifyPlaylist(
-    //         createdPlaylist.id,
-    //         queueTracks.map((track) => track.id),
-    //         spotifyToken
-    //       )
-    //     : await addTracksToYoutubePlaylist(
-    //         createdPlaylist.id,
-    //         queueTracks.map((track) => track.id),
-    //         youtubeToken
-    //       );
-
-    // console.log(createdPlaylist);
-    // console.log(addedTracks);
-    // setQueueActive(false);
-  };
+  }; 
 
   return (
     <>
-      {/* {
-        loadMultipleQuery && (
-          <PreviewPlaylistModal
-            isOpen={modal}
-            onClose={() => setModal(false)}
-            playlistName={playlistName}
-            searchResults={loadMultipleQuery}
-            onConfirm={() => setModal(false)}
-          />
-        )
-      } */}
-      <div className="sticky top-0 z-10 bg-black">
-        <div className="relative">
-          <div className="flex justify-between items-center relative z-1 bg-black">
-            <h1 className="text-2xl p-4 font-semibold">Queue Tracks</h1>
-            {queueActive ? (
+      {finalSearchedTracks && (
+        <PreviewPlaylistModal
+          isOpen={modal}
+          onClose={() => setModal(false)}
+          playlistName={playlistName}
+          searchResults={finalSearchedTracks}
+          onConfirm={(tracks) => {
+            savePlaylist(playlistPlatform, tracks);
+            setQueueActive(false);
+          }}
+        />
+      )} 
+      {queueActive && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-hidden flex justify-between">
+            <form
+              className={`w-full z-0 bg-white text-black py-4 px-4`}
+            > 
+              <h1 className="w-full pt-2 pb-4 text-2xl font-semibold">Create Playlist</h1>
+              <input
+                type="text"
+                value={playlistName}
+                onChange={(e) => setPlaylistName(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-blue-500 mb-2"
+                placeholder="Playlist Name.."
+              />
+              <input
+                type="text"
+                value={playlistDescription}
+                onChange={(e) => setPlaylistDescription(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-blue-500 mb-2"
+                placeholder="Playlist Description.."
+              />
+              <select
+                defaultValue={playlistPrivacy}
+                onChange={(e) => setPlaylistPrivacy(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-2 text-sm focus:outline-none focus:border-blue-500 mb-2"
+              >
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+              <select
+                defaultValue={playlistPlatform}
+                onChange={(e) => setPlaylistPlatform(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-2 text-sm focus:outline-none focus:border-blue-500"
+              >
+                <option value="spotify">Spotify</option>
+                <option value="youtube">Youtube</option>
+              </select> 
               <button
-                className={`bg-green-500 me-4 text-white py-2 px-6 rounded-full text-sm transition-colors cursor-pointer`}
-                onClick={handleCreatePlaylist}
+                type="button"
+                className="bg-slate-900 hover:bg-slate-800 text-white w-full py-3 mt-4 rounded-full border border-white cursor-pointer"
+                onClick={handlePlaylistPreview}
               >
                 Save Playlist
               </button>
-            ) : (
-              <button
-                className={`bg-blue-500 me-4 text-white py-2 px-6 rounded-full text-sm transition-colors cursor-pointer`}
-                onClick={() => {
-                  setQueueActive(!queueActive);
-                }}
-              >
-                Create Playlist
-              </button>
-            )}
+            </form>
           </div>
-          <form
-            className={`w-full z-0 bg-white text-black border-4 border-black py-4 px-4 absolute top-${
-              queueActive ? "1 block" : "0 hidden"
-            } left-1/2 transform -translate-x-1/2 -translate-y-1`}
-          >
-            <input
-              type="text"
-              value={playlistName}
-              onChange={(e) => setPlaylistName(e.target.value)}
-              className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-blue-500 mb-2"
-              placeholder="Playlist Name.."
-            />
-            <input
-              type="text"
-              value={playlistDescription}
-              onChange={(e) => setPlaylistDescription(e.target.value)}
-              className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:border-blue-500 mb-2"
-              placeholder="Playlist Description.."
-            />
-            <select
-              defaultValue={playlistPrivacy}
-              onChange={(e) => setPlaylistPrivacy(e.target.value)}
-              className="w-full border border-gray-300 rounded-md py-2 px-2 text-sm focus:outline-none focus:border-blue-500 mb-2"
-            >
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
-            <select
-              defaultValue={playlistPlatform}
-              onChange={(e) => setPlaylistPlatform(e.target.value)}
-              className="w-full border border-gray-300 rounded-md py-2 px-2 text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="spotify">Spotify</option>
-              <option value="youtube">Youtube</option>
-            </select>
-          </form>
         </div>
-        <hr />
+      )}
+      <div className="sticky top-0 z-10 bg-slate-800">
+        <div className="flex items-start justify-between bg-slate-800 px-4 pt-4 ">
+          <div>
+            <h1 className="text-2xl font-semibold mb-2">Create Playlist</h1>
+            <div className="flex gap-2 pb-1">
+              <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
+                All
+              </button>
+              <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
+                Spotify
+              </button>
+              <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
+                Youtube
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => { 
+              setQueueActive(!queueActive);
+            }}
+            className="rounded-full border border-slate-600 hover:border-slate-400 bg-slate-700 text-sm px-4 py-1.5 font-medium text-white transition"
+          >
+            <span className="block">
+              Create Now <i className="fa-solid fa-add"></i> 
+            </span>
+          </button>
+        </div>
       </div>
-      <div className="p-4 space-y-4">
+      <div className="p-4">
         {queueTracks.length ? (
           queueTracks.map((track: any) => (
             <QueueTrackCard key={track.id} track={track} />

@@ -9,58 +9,84 @@ export default function Home({
   connectSpotify,
   spotifyUser,
   loadBothLikedTracks,
-  loadBothPlaylists 
+  loadBothPlaylists,
 }: any) {
   return (
     <>
-      <header className="bg-white">
-        <div className="mx-auto flex h-20 w-full items-center justify-between gap-8 px-4 sm:px-6 lg:px-8 bg-black">
-          <h1 className="text-3xl text-white font-extrabold">Music Manager : { youtubeUser ? youtubeUser.display_name : "YT" } | { spotifyUser ? spotifyUser.display_name : "SP" }</h1>
+      <header>
+        <div className="mx-auto flex h-20 w-full items-center justify-between gap-8 px-4 sm:px-6 lg:px-8 bg-slate-900">
+          <h1 className="text-3xl text-white font-extrabold">
+            <span>PLay</span>
+            <span className="text-red-500">Lit</span>
+          </h1>
+          {/* { youtubeUser ? youtubeUser.display_name : "YT" } | { spotifyUser ? spotifyUser.display_name : "SP" } */}
           <div className="flex items-center justify-end md:justify-between">
             <div className="flex items-center gap-4">
               <div className="sm:flex sm:gap-4">
                 <button
-                  onClick={connectYoutube}
-                  className="block rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                  onClick={loadBothPlaylists}
+                  className="rounded-lg bg-slate-700 px-5 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800 flex items-center"
                 >
-                  {youtubeUser ? "Connected YT!" : "Connect YouTube"}
+                  Refresh Playlists
+                </button>
+                <button
+                  onClick={loadBothLikedTracks}
+                  className="rounded-lg bg-slate-700 px-5 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800 flex items-center"
+                >
+                  Refresh Liked Tracks
+                </button>
+                <button
+                  onClick={connectYoutube}
+                  className="rounded-lg bg-slate-700 px-5 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800 flex items-center"
+                >
+                  <span>
+                    {youtubeUser ? "Connected YT!" : "Connect YouTube"}
+                  </span>
+                  <i className="fa-brands fa-youtube px-2 text-base text-red-500"></i>
                 </button>
                 <button
                   onClick={connectSpotify}
-                  className="block rounded-full bg-green-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-700"
+                  className="rounded-lg bg-slate-700 px-5 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800 flex items-center"
                 >
-                  {spotifyUser ? "Connected SP!" : "Connect Spotify"}
-                </button> 
+                  <span>
+                    {spotifyUser ? "Connected SP!" : "Connect Spotify"}
+                  </span>
+                  <i className="fa-brands fa-spotify px-2 text-base text-green-500"></i>
+                </button>
                 <button
-                  onClick={loadBothPlaylists}
-                  className="block rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
+                  onClick={() => {}}
+                  className="px-5 py-1.5 text-lg font-medium text-white transition flex items-center"
                 >
-                  Load Playlists
-                </button> 
-                <button
-                  onClick={loadBothLikedTracks}
-                  className="block rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
-                >
-                  Load Liked Tracks
+                  <span>
+                    Hey{" "}
+                    {youtubeUser && spotifyUser
+                      ? spotifyUser.display_name
+                      : youtubeUser
+                      ? youtubeUser.display_name
+                      : spotifyUser
+                      ? spotifyUser.display_name
+                      : "there!"}
+                    👋
+                  </span>
                 </button>
               </div>
             </div>
           </div>
         </div>
       </header>
-      <main className="bg-white p-5">
+      <main className="bg-slate-900 p-5">
         <div className="h-[calc(100vh-120px)] bg-white">
-          <div className="grid grid-cols-9 gap-5 h-full">
-            <div className="h-full bg-black text-white col-span-2 overflow-y-scroll relative">
-              <LikedTracks />
-            </div>
-            <div className="h-full bg-black text-white col-span-3 overflow-y-scroll">
+          <div className="grid grid-cols-4 grid-rows-2 gap-5 h-full bg-slate-900">
+            <div className="h-full bg-slate-800 text-white col-span-2 row-span-2 overflow-y-scroll border border-slate-700 rounded-lg">
               <Outlet />
             </div>
-            <div className="h-full bg-black text-white col-span-2 overflow-y-scroll">
+            <div className="h-full bg-slate-800 text-white col-span-1 overflow-y-scroll border border-slate-700 rounded-lg">
+              <LikedTracks />
+            </div>
+            <div className="h-full bg-slate-800 text-white col-span-1 overflow-y-scroll border border-slate-700 rounded-lg">
               <SearchTracks />
             </div>
-            <div className="h-full bg-black text-white col-span-2 overflow-y-scroll">
+            <div className="h-full bg-slate-800 text-white col-span-2 overflow-y-scroll border border-slate-700 rounded-lg">
               <QueueTracks />
             </div>
           </div>

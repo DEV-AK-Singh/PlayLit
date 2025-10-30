@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import Home from "./components/Home";
-import { useMyContext } from "./components/ContextUtil";
+import { useMyContext } from "./components/ContextUtil"; 
 
 export type QueryType = {
   id: string;
@@ -36,6 +36,12 @@ export type Playlist = {
   platform: string;
 };
 
+export const milliSecondsToMinutesSeconds = (milliseconds: number ) => {
+  const minutes = Math.floor(milliseconds / 60000);
+  const seconds = Math.floor(((milliseconds % 60000) / 1000));
+  return `${minutes}:${(seconds < 10) ? "0" + seconds : seconds}`;
+};
+
 const cleanQuery = (query: string) => {
   return query.replace(/[^\w\s]/g, ""); // Remove everything except letters, numbers, spaces
 };
@@ -68,7 +74,6 @@ export const loadSearchedYoutubeTracks = async (
     );
     const data = await response.json();
     console.log(data);
-    // return sortArrayByKey(data.data, "name");
     return data.data;
   } catch (error) {
     console.error(error);
@@ -82,7 +87,7 @@ export const loadMultipleSearchedYoutubeTracks = async (
   limit: number = 3
 ) => {
   const results = [] as any[];
-  queries.forEach(async (query: QueryType) => {
+  for await (const query of queries) {
     const youtubeTracks = await loadSearchedYoutubeTracks(
       cleanQuery(query.query),
       youtubeToken,
@@ -93,8 +98,8 @@ export const loadMultipleSearchedYoutubeTracks = async (
       query: cleanQuery(query.query),
       tracks: youtubeTracks,
     });
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }); 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
   return results;
 };
 
@@ -116,7 +121,6 @@ export const loadSearchedSpotifyTracks = async (
     );
     const data = await response.json();
     console.log(data);
-    // return sortArrayByKey(data.data, "name");
     return data.data;
   } catch (error) {
     console.error(error);
@@ -130,7 +134,7 @@ export const loadMultipleSearchedSpotifyTracks = async (
   limit: number = 3
 ) => {
   const results = [] as any[];
-  queries.forEach(async (query: QueryType) => {
+  for await (const query of queries) {
     const spotifyTracks = await loadSearchedSpotifyTracks(
       cleanQuery(query.query),
       spotifyToken,
@@ -141,8 +145,8 @@ export const loadMultipleSearchedSpotifyTracks = async (
       query: cleanQuery(query.query),
       tracks: spotifyTracks,
     });
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }); 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
   return results;
 };
 
@@ -153,20 +157,33 @@ export const loadSearchedTracks = async (
 ) => {
   let youtubeTracks = [];
   let spotifyTracks = [];
-  if (youtubeToken) {
-    youtubeTracks = await loadSearchedYoutubeTracks(
-      cleanQuery(query),
-      youtubeToken
-    );
+  try {
+    if (youtubeToken) {
+      youtubeTracks = await loadSearchedYoutubeTracks(
+        cleanQuery(query),
+        youtubeToken
+      );
+    }
+  } catch (error) {
+    console.error(error);
   }
-  if (spotifyToken) {
-    spotifyTracks = await loadSearchedSpotifyTracks(
-      cleanQuery(query),
-      spotifyToken
-    );
+  try {
+    if (spotifyToken) {
+      spotifyTracks = await loadSearchedSpotifyTracks(
+        cleanQuery(query),
+        spotifyToken
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  } 
+  let tracks: Track[] = [];
+  if (youtubeTracks?.length > 0) {
+    tracks = [...tracks, ...youtubeTracks];
   }
-  const tracks = [...youtubeTracks, ...spotifyTracks];
-  // return sortArrayByKey(tracks, "name");
+  if (spotifyTracks?.length > 0) {
+    tracks = [...tracks, ...spotifyTracks];
+  }
   return tracks;
 };
 
@@ -357,6 +374,75 @@ export const addTracksToSpotifyPlaylist = async (
   }
 };
 
+export const deletePlaylist = async (
+  playlistId: string,
+  platform: string,
+  youtubeToken: string,
+  spotifyToken: string
+) => {
+  if (platform === "spotify" && spotifyToken) {
+    const tracksUriSpotify: string[] = (
+      await loadPlaylistTracks(
+        playlistId,
+        youtubeToken,
+        spotifyToken,
+        "spotify"
+      )
+    ).map((track) => track.id);
+    console.log(tracksUriSpotify);
+    try {
+      const responseDelete = await fetch(
+        `http://localhost:5000/api/spotify/me/playlists/${playlistId}/tracks`,
+        {
+          method: "DELETE",
+          body: JSON.stringify({ trackUris: tracksUriSpotify }),
+          headers: {
+            Authorization: `Bearer ${spotifyToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const deleteData = await responseDelete.json();
+      const responseUnfollow = await fetch(
+        `http://localhost:5000/api/spotify/me/playlists/${playlistId}/followers`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${spotifyToken}`,
+          },
+        }
+      );
+      const unfollowData = await responseUnfollow.json();
+      console.log(deleteData, unfollowData);
+      return { deleteData, unfollowData };
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  } else if (platform === "youtube" && youtubeToken) {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/youtube/me/playlists/${playlistId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${youtubeToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+      console.log(data);
+      return data.data;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  } else {
+    console.error("No token found");
+    return [];
+  }
+};
+
 function App() {
   const { setLikedTracks, setMyPlaylists } = useMyContext();
 
@@ -366,12 +452,14 @@ function App() {
   const [spotifyToken, setSpotifyToken] = useState(
     localStorage.getItem("spotifyToken") || ""
   );
+
   const [youtubeUser, setYoutubeUser] = useState(null as User | null);
   const [spotifyUser, setSpotifyUser] = useState(null as User | null);
+
   const [youtubeLikedTracks, setYoutubeLikedTracks] = useState([] as Track[]);
   const [spotifyLikedTracks, setSpotifyLikedTracks] = useState([] as Track[]);
   const [youtubePlaylists, setYoutubePlaylists] = useState([] as Playlist[]);
-  const [spotifyPlaylists, setSpotifyPlaylists] = useState([] as Playlist[]);
+  const [spotifyPlaylists, setSpotifyPlaylists] = useState([] as Playlist[]); 
 
   const connectYoutube = async () => {
     try {
@@ -527,27 +615,6 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    checkForYoutubeToken();
-    checkForSpotifyToken();
-  }, []);
-
-  useEffect(() => {
-    loadYoutubeProfile();
-    loadSpotifyProfile();
-  }, [youtubeToken, spotifyToken]);
-
-  // useEffect(() => {
-  //   if (youtubeUser) {
-  //     loadYoutubePlaylists();
-  //     loadYoutubeLikedTracks();
-  //   }
-  //   if (spotifyUser) {
-  //     loadSpotifyPlaylists();
-  //     loadSpotifyLikedTracks();
-  //   }
-  // }, [youtubeUser, spotifyUser]);
- 
   const loadBothPlaylists = () => {
     loadYoutubePlaylists();
     loadSpotifyPlaylists();
@@ -559,7 +626,17 @@ function App() {
   };
 
   useEffect(() => {
-    if ( youtubeLikedTracks || spotifyLikedTracks ){
+    checkForYoutubeToken();
+    checkForSpotifyToken();
+  }, []);
+
+  useEffect(() => {
+    loadYoutubeProfile();
+    loadSpotifyProfile();
+  }, [youtubeToken, spotifyToken]);
+
+  useEffect(() => {
+    if (youtubeLikedTracks || spotifyLikedTracks) {
       setLikedTracks(
         sortArrayByKey([...youtubeLikedTracks, ...spotifyLikedTracks], "name")
       );
@@ -567,7 +644,7 @@ function App() {
   }, [youtubeLikedTracks, spotifyLikedTracks]);
 
   useEffect(() => {
-    if ( youtubePlaylists || spotifyPlaylists ){
+    if (youtubePlaylists || spotifyPlaylists) {
       setMyPlaylists(
         sortArrayByKey([...youtubePlaylists, ...spotifyPlaylists], "name")
       );
@@ -576,13 +653,13 @@ function App() {
 
   return (
     <>
-      <Home  
+      <Home
         connectYoutube={connectYoutube}
         youtubeUser={youtubeUser}
         connectSpotify={connectSpotify}
         spotifyUser={spotifyUser}
         loadBothLikedTracks={loadBothLikedTracks}
-        loadBothPlaylists={loadBothPlaylists}  
+        loadBothPlaylists={loadBothPlaylists}
       />
     </>
   );

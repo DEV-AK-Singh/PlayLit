@@ -9,25 +9,47 @@ export default function SearchTracks() {
 
   const youtubeToken = localStorage.getItem("youtubeToken") || "";
   const spotifyToken = localStorage.getItem("spotifyToken") || "";
-  
+
   const { searchedTracks, setSearchedTracks } = useMyContext();
-  
+
   const [queryText, setQueryText] = useState("");
-  
+
   const handleSearch = async () => {
-    const tracks = await loadSearchedTracks(queryText, youtubeToken, spotifyToken);
+    const tracks = await loadSearchedTracks(
+      queryText,
+      youtubeToken,
+      spotifyToken
+    );
     setSearchedTracks(tracks);
   };
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-black">
-        <div className="relative">
-          <div className="flex justify-between items-center relative z-1 bg-black">
-            <h1 className="text-2xl p-4 font-semibold">Search Tracks</h1>
+      {searchActive && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-full max-w-xl w-full max-h-[90vh] overflow-hidden flex justify-between">
+            <input
+              autoFocus
+              type="text"
+              value={queryText}
+              className="flex-1 px-6 py-3 rounded-full focus:outline-none text-black outline-none"
+              onChange={(e) => setQueryText(e.target.value)}
+              placeholder="search tracks, artists, or albums on youTube or spotify..." 
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (queryText) {
+                    handleSearch();
+                    setQueryText("");
+                  } else {
+                    setSearchedTracks([]);
+                  }
+                  setSearchActive(!searchActive);
+                }
+              }}
+            />
             <button
-              className="bg-blue-500 me-4 text-white py-2 px-6 rounded-full text-sm hover:bg-blue-600 transition-colors"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (queryText) {
                   handleSearch();
                   setQueryText("");
@@ -36,25 +58,48 @@ export default function SearchTracks() {
                 }
                 setSearchActive(!searchActive);
               }}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-full border border-white cursor-pointer"
             >
-              Search
+              <span className="block">
+                <i className="fa-solid fa-magnifying-glass"></i> Search
+              </span>
             </button>
           </div>
-          <input
-            type="text"
-            value={queryText}
-            onChange={(e) => setQueryText(e.target.value)}
-            className={`w-full h-full focus:outline-none z-0 bg-white text-black border-4 border-black py-2 px-4 absolute top-${
-              searchActive ? "1" : "0"
-            } left-1/2 transform -translate-x-1/2 -translate-y-1`}
-            placeholder="Search"
-          />
         </div>
-        <hr />
+      )}
+      <div className="sticky top-0 z-10 bg-slate-800">
+        <div className="flex items-start justify-between bg-slate-800 px-4 pt-4 ">
+          <div>
+            <h1 className="text-2xl font-semibold mb-2">Search Tracks</h1>
+            <div className="flex gap-2 pb-1">
+              <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
+                All
+              </button>
+              <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
+                Spotify
+              </button>
+              <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
+                Youtube
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setSearchActive(!searchActive);
+            }}
+            className="rounded-full border border-slate-600 hover:border-slate-400 bg-slate-700 text-sm px-4 py-1.5 font-medium text-white transition cursor-pointer"
+          >
+            <span className="block">
+              <i className="fa-solid fa-magnifying-glass"></i> Search
+            </span>
+          </button>
+        </div>
       </div>
-      <div className="p-4 space-y-4">
+      <div className="p-4">
         {searchedTracks.length ? (
-          searchedTracks.map((track: any) => <TrackCard key={track.id} track={track}/>)
+          searchedTracks.map((track: any) => (
+            <TrackCard key={track.id} track={track} />
+          ))
         ) : (
           <Nothing />
         )}

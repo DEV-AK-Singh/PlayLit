@@ -1,23 +1,25 @@
 import { createContext, useState } from "react";
+import type { Playlist, Track } from "./App";
+import { dummyData } from "./data/dummyData";
 
 type ContextType = {
-  likedTracks: any[];
-  setLikedTracks: (tracks: any[]) => void;
-  queueTracks: any[];
-  setQueueTracks: (tracks: any[]) => void;
-  searchedTracks: any[];
-  setSearchedTracks: (tracks: any[]) => void;
-  myPlaylists: any[];
-  setMyPlaylists: (playlists: any[]) => void;
+  likedTracks: Track[];
+  setLikedTracks: (tracks: Track[]) => void;
+  queueTracks: Track[];
+  setQueueTracks: (tracks: Track[]) => void;
+  searchedTracks: Track[];
+  setSearchedTracks: (tracks: Track[]) => void;
+  myPlaylists: Playlist[];
+  setMyPlaylists: (playlists: Playlist[]) => void;
 };
 
 export const MyContext = createContext<ContextType | undefined>(undefined);
 
 export const ContextProvider = ({ children }: any) => {
-  const [likedTracks, setLikedTracks] = useState([] as any);
-  const [queueTracks, setQueueTracks] = useState([] as any);
-  const [searchedTracks, setSearchedTracks] = useState([] as any);
-  const [myPlaylists, setMyPlaylists] = useState([] as any);
+  const [likedTracks, setLikedTracks] = useState([] as Track[]);
+  const [queueTracks, setQueueTracks] = useState([] as Track[]);
+  const [searchedTracks, setSearchedTracks] = useState([] as Track[]);
+  const [myPlaylists, setMyPlaylists] = useState([] as Playlist[]);
 
   const contextInitialValues : ContextType = {
     likedTracks,

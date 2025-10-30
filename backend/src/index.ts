@@ -15,14 +15,26 @@ app.use(express.json());
 let userTokens: Record<string, { access_token: string, refresh_token: string, expires_in: number, platform: string }> = {};
 
 // Utility function to parse ISO 8601 duration
-function parseDuration(duration: string) {
-    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-    if (!match) return 0;
-    const hours = (match[1] ? parseInt(match[1]) : 0);
-    const minutes = (match[2] ? parseInt(match[2]) : 0);
-    const seconds = (match[3] ? parseInt(match[3]) : 0);
-    return hours * 3600 + minutes * 60 + seconds;
-}
+const parseDuration = (isoDuration: string): number => {
+  if (!isoDuration || typeof isoDuration !== 'string') {
+    return 0;
+  } 
+  // Regex to capture the time components (hours, minutes, seconds)
+  // The 'T' separates date and time, so we focus on the time part.
+  const regex = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/;
+  const matches = isoDuration.match(regex); 
+  if (!matches) {
+    return 0; // Return a default for an invalid format
+  } 
+  // Parse matched groups to integers, defaulting to 0 if not present
+  const hours = parseInt(matches[1] || '0', 10);
+  const minutes = parseInt(matches[2] || '0', 10);
+  const seconds = parseInt(matches[3] || '0', 10); 
+  // Calculate the total duration in seconds
+  const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+  // In milliseconds
+  return totalSeconds * 1000;
+};
 
 // Y1. Get YouTube Auth URL
 app.get('/api/auth/youtube', (req, res) => {
@@ -157,7 +169,7 @@ app.get('/api/youtube/me/playlists/:playlistId/tracks', async (req, res) => {
         const tracks = await Promise.all(
             response.data.items.map(async (item: any) => {
                 const video = item.snippet;
-                let duration = 0;
+                let duration;
                 try {
                     const videoResponse = await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${video.resourceId.videoId}`,
                         { headers: { 'Authorization': `Bearer ${accessToken}` } });
@@ -210,7 +222,7 @@ app.get('/api/youtube/me/liked', async (req, res) => {
         const tracks = await Promise.all(
             response.data.items.map(async (item: any) => {
                 const video = item.snippet;
-                let duration = 0;
+                let duration;
                 try {
                     const videoResponse = await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${video.resourceId.videoId}`, {
                         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -266,7 +278,7 @@ app.get('/api/youtube/me/search', async (req, res) => {
         const tracks = await Promise.all(
             response.data.items.map(async (item: any) => {
                 const video = item.snippet;
-                let duration = 0;
+                let duration;
                 try {
                     const videoResponse = await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${item.id.videoId}`, {
                         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -483,6 +495,31 @@ app.delete('/api/youtube/me/playlists/:playlistId/tracks/:itemId', async (req, r
         res.status(400).json({
             success: false,
             error: error.response?.data?.error?.message || 'Failed to remove track from playlist'
+        });
+    }
+});
+
+// Y12. Delete Playlist
+app.delete('/api/youtube/me/playlists/:id', async (req, res) => {
+    try {
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
+        const { id } = req.params;
+        if (!tokenId || !userTokens[tokenId]) {
+            return res.status(401).json({ error: 'Invalid or missing token' });
+        }
+        const accessToken = userTokens[tokenId].access_token;
+        await axios.delete(`https://www.googleapis.com/youtube/v3/playlists?id=${id}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        res.json({
+            success: true,
+            message: 'Playlist deleted successfully!'
+        });
+    } catch (error: any) {
+        console.error('YouTube API error:', error.response?.data || error.message);
+        res.status(400).json({
+            success: false,
+            error: error.response?.data?.error?.message || 'Failed to delete playlist'
         });
     }
 });
@@ -817,6 +854,62 @@ app.delete('/api/spotify/me/playlists/:id/tracks/:trackId', async (req, res) => 
         res.status(400).json({
             success: false,
             error: error.response?.data?.error?.message || 'Failed to delete track from playlist'
+        });
+    }
+});
+
+// S11. Delete tracks from playlist
+app.delete('/api/spotify/me/playlists/:id/tracks', async (req, res) => {
+    try {
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
+        if (!tokenId || !userTokens[tokenId]) {
+            return res.status(401).json({ error: 'Invalid or missing token' });
+        }
+        const accessToken = userTokens[tokenId].access_token;
+        const playlistId = req.params.id;
+        const trackUris: string[] = req.body.trackUris;
+        console.log(trackUris);
+        const response: any = await axios.delete(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            data: {
+                tracks: trackUris.map((uri: string) => ({ uri: `spotify:track:${uri}` }))
+            },
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
+        });
+        res.json({
+            success: true,
+            data: response.data
+        });
+    } catch (error: any) {
+        console.error('Spotify API error:', error.response?.data || error.message);
+        res.status(400).json({
+            success: false,
+            error: error.response?.data?.error?.message || 'Failed to delete tracks from playlist'
+        });
+    }
+});
+
+// S12. Unfollow Playlist
+app.delete('/api/spotify/me/playlists/:id/followers', async (req, res) => {
+    try {
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
+        if (!tokenId || !userTokens[tokenId]) {
+            return res.status(401).json({ error: 'Invalid or missing token' });
+        }
+        const accessToken = userTokens[tokenId].access_token;
+        const playlistId = req.params.id;
+        const response: any = await axios.delete(`https://api.spotify.com/v1/playlists/${playlistId}/followers`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        }
+        );
+        res.json({
+            success: true,
+            data: response.data
+        });
+    } catch (error: any) {
+        console.error('Spotify API error:', error.response?.data || error.message);
+        res.status(400).json({
+            success: false,
+            error: error.response?.data?.error?.message || 'Failed to unfollow playlist'
         });
     }
 });
