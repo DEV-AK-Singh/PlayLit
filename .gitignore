@@ -2,3 +2,4 @@ node_modules
 login.txt
 .env
 *.pem
+.vscode
