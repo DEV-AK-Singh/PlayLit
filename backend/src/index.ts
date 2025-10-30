@@ -2,38 +2,59 @@ import express, { raw } from 'express';
 import cors from 'cors';
 import axios from 'axios';
 import { configDotenv } from 'dotenv';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import path from 'path';
+
+import { fileURLToPath } from 'url';
+
+// ES modules fix for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
 configDotenv();
+app.use(helmet({
+    contentSecurityPolicy: false, // Adjust based on your needs
+}));
+app.use(compression());
+app.use(morgan('combined')); // Use 'common' for production
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from React build in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+}
 
 // Store tokens (in production, use a database)
 let userTokens: Record<string, { access_token: string, refresh_token: string, expires_in: number, platform: string }> = {};
 
 // Utility function to parse ISO 8601 duration
 const parseDuration = (isoDuration: string): number => {
-  if (!isoDuration || typeof isoDuration !== 'string') {
-    return 0;
-  } 
-  // Regex to capture the time components (hours, minutes, seconds)
-  // The 'T' separates date and time, so we focus on the time part.
-  const regex = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/;
-  const matches = isoDuration.match(regex); 
-  if (!matches) {
-    return 0; // Return a default for an invalid format
-  } 
-  // Parse matched groups to integers, defaulting to 0 if not present
-  const hours = parseInt(matches[1] || '0', 10);
-  const minutes = parseInt(matches[2] || '0', 10);
-  const seconds = parseInt(matches[3] || '0', 10); 
-  // Calculate the total duration in seconds
-  const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-  // In milliseconds
-  return totalSeconds * 1000;
+    if (!isoDuration || typeof isoDuration !== 'string') {
+        return 0;
+    }
+    // Regex to capture the time components (hours, minutes, seconds)
+    // The 'T' separates date and time, so we focus on the time part.
+    const regex = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/;
+    const matches = isoDuration.match(regex);
+    if (!matches) {
+        return 0; // Return a default for an invalid format
+    }
+    // Parse matched groups to integers, defaulting to 0 if not present
+    const hours = parseInt(matches[1] || '0', 10);
+    const minutes = parseInt(matches[2] || '0', 10);
+    const seconds = parseInt(matches[3] || '0', 10);
+    // Calculate the total duration in seconds
+    const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+    // In milliseconds
+    return totalSeconds * 1000;
 };
 
 // Y1. Get YouTube Auth URL
@@ -418,9 +439,9 @@ app.post('/api/youtube/me/playlists/:playlistId/track', async (req, res) => {
 // Y10. Add Tracks to YouTube Playlist
 app.post('/api/youtube/me/playlists/:playlistId/tracks', async (req, res) => {
     try {
-        const tokenId = req.headers.authorization?.replace('Bearer ', ''); 
+        const tokenId = req.headers.authorization?.replace('Bearer ', '');
         const { playlistId } = req.params;
-        const { videoIds } : { videoIds: string[] } = req.body;
+        const { videoIds }: { videoIds: string[] } = req.body;
         if (!tokenId || !userTokens[tokenId]) {
             return res.status(401).json({ error: 'Invalid or missing token' });
         }
@@ -428,9 +449,9 @@ app.post('/api/youtube/me/playlists/:playlistId/tracks', async (req, res) => {
             return res.status(400).json({ error: 'Video IDs is required' });
         }
         const accessToken = userTokens[tokenId].access_token;
-        const results = [];  
+        const results = [];
         try {
-            for (let i=0; i<videoIds.length; i++) { 
+            for (let i = 0; i < videoIds.length; i++) {
                 const videoId = videoIds[i];
                 const response = await axios.post('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet',
                     {
@@ -454,7 +475,7 @@ app.post('/api/youtube/me/playlists/:playlistId/tracks', async (req, res) => {
                 if (i < videoIds.length - 1) {
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 }
-            } 
+            }
         } catch (error) {
             console.log(error);
             results.push({ success: false, error });
@@ -917,9 +938,10 @@ app.delete('/api/spotify/me/playlists/:id/followers', async (req, res) => {
 // Health endpoint
 app.get('/api/health', (req, res) => {
     res.json({ success: true });
-});
+}); 
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Server running on port ${port}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
