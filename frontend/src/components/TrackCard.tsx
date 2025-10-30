@@ -9,7 +9,7 @@ export default function TrackCard({ track }: { track: Track }) {
   };
   return (
     <div
-      className="text-white transition-all duration-200 max-w-md cursor-pointer py-2"
+      className="text-white transition-all duration-200 cursor-pointer py-2"
       onClick={() => {
         if (checkTrack(track)) {
           alert("Track already in queue!");

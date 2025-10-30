@@ -1,6 +1,5 @@
 import { createContext, useState } from "react";
-import type { Playlist, Track } from "./App";
-import { dummyData } from "./data/dummyData";
+import type { Playlist, Track } from "./App"; 
 
 type ContextType = {
   likedTracks: Track[];

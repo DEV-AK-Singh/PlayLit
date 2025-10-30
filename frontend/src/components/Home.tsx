@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import SearchTracks from "./SearchTracks";
 import QueueTracks from "./QueueTracks";
 import LikedTracks from "./LikedTracks";
+import playLitLogo from "../assets/playlitLogo.png";
 
 export default function Home({
   connectYoutube,
@@ -15,10 +16,13 @@ export default function Home({
     <>
       <header>
         <div className="mx-auto flex h-20 w-full items-center justify-between gap-8 px-4 sm:px-6 lg:px-8 bg-slate-900">
-          <h1 className="text-3xl text-white font-extrabold">
-            <span>PLay</span>
-            <span className="text-red-500">Lit</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <img src={playLitLogo} alt="PlayLit Logo" className="h-16 w-16 mix-blend-lighten" />
+            <h1 className="text-3xl text-white font-extrabold">
+              <span>PLay</span>
+              <span className="text-red-500">Lit</span>
+            </h1>
+          </div>
           {/* { youtubeUser ? youtubeUser.display_name : "YT" } | { spotifyUser ? spotifyUser.display_name : "SP" } */}
           <div className="flex items-center justify-end md:justify-between">
             <div className="flex items-center gap-4">
