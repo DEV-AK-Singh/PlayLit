@@ -1,7 +1,10 @@
-export default function Nothing() {
+export default function Nothing({icon, text}: {icon: string, text: string}) {
   return (
-    <div className="flex items-center justify-start">
-      <h1 className="text-2xl font-semibold">Nothing Here...</h1>
-    </div>
+    <>
+      <div className="empty-state">
+        <div className="empty-icon">{icon}</div>
+        <div className="empty-text">{text}</div>
+      </div>
+    </>
   );
 }

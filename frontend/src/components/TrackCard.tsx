@@ -1,4 +1,4 @@
-import { milliSecondsToMinutesSeconds, type Track } from "../App";
+import { milliSecondsToMinutesSeconds, type Track } from "../App.tsx";
 import { useMyContext } from "./ContextUtil";
 
 export default function TrackCard({ track }: { track: Track }) {
@@ -8,20 +8,19 @@ export default function TrackCard({ track }: { track: Track }) {
     return existingTrack ? true : false;
   };
   return (
-    <div
-      className="text-white transition-all duration-200 cursor-pointer py-2"
-      onClick={() => {
-        if (checkTrack(track)) {
-          alert("Track already in queue!");
-          return;
-        } else {
-          setQueueTracks([...queueTracks, track]);
-        }
-      }}
-    >
-      <div className="flex items-center space-x-2">
-        {/* Album Art */}
-        <div className="relative w-14 h-14">
+    <>
+      <div
+        className="track-item"
+        onClick={() => {
+          if (checkTrack(track)) {
+            alert("Track already in queue!");
+            return;
+          } else {
+            setQueueTracks([...queueTracks, track]);
+          }
+        }}
+      >
+        <div className="track-img">
           <img
             src={
               track?.image ||
@@ -36,33 +35,11 @@ export default function TrackCard({ track }: { track: Track }) {
             }}
           />
         </div>
-        {/* Track Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white text-sm truncate">
-            {track?.name}
-          </h3>
-          <p className="text-white text-xs truncate">{track?.artist}</p>
-        </div>
-        {/* Actions */}
-        <div className="flex items-center px-1 sm:px-2 md:px-4 lg:px-6 xl:px-8">
-          <h1 className="text-xs font-thin">
-            {milliSecondsToMinutesSeconds(track?.duration || 0)}
-          </h1>
-        </div>
-        <div className="flex items-center space-x-3 pe-3">
-          <button
-            className={`${
-              track?.platform === "spotify" ? "text-green-500" : "text-red-500"
-            } transition-colors text-2xl`}
-          >
-            {track?.platform === "spotify" ? (
-              <i className="fa-brands fa-spotify"></i>
-            ) : (
-              <i className="fa-brands fa-youtube"></i>
-            )}
-          </button>
+        <div className="track-info">
+          <div className="track-title">{track?.name}</div>
+          <div className="track-artist">{track?.artist} • {milliSecondsToMinutesSeconds(track?.duration || 0)} • {track?.platform}</div> 
         </div>
       </div>
-    </div>
+    </>
   );
 }

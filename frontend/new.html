@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayLit | Sync your youtube and spotify playlists</title>
+    <link rel="icon" type="image/png" href="https://playlit.space/playlitLogo.png"> 
+</head>
+<body>
+    <div class="bg-overlay"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo-section">
+            <div class="logo-icon"></div>
+            <div class="logo-text-container">
+                <h1 class="logo-text">PlayLit</h1>
+                <div class="logo-tagline">Music Synced</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn">Refresh Playlists</button>
+            <button class="btn">Refresh Liked Tracks</button>
+            <button class="btn">
+                <span class="status-dot yt-dot"></span>
+                <span>YouTube</span>
+            </button>
+            <button class="btn">
+                <span class="status-dot sp-dot"></span>
+                <span>Spotify</span>
+            </button>
+            <button class="btn btn-primary">
+                <span>Hey Shivam 👋</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="grid-container">
+            <!-- My Playlists Panel -->
+            <div class="panel playlists-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">My Playlists</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">Spotify</button>
+                        <button class="filter-btn">Youtube</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="playlist-grid">
+                        <div class="playlist-card">
+                            <div class="playlist-img">🎵</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Summer Vibes 2024</div>
+                            <div class="playlist-subtitle">42 tracks • 2.5 hours</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);">🔥</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Workout Bangers</div>
+                            <div class="playlist-subtitle">38 tracks • 2.1 hours</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">🌙</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Night Drive</div>
+                            <div class="playlist-subtitle">55 tracks • 3.2 hours</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #fa709a, #fee140);">☕</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Chill Morning</div>
+                            <div class="playlist-subtitle">29 tracks • 1.8 hours</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">🎸</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Rock Classics</div>
+                            <div class="playlist-subtitle">67 tracks • 4.1 hours</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #fbc2eb, #a6c1ee);">💜</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Lo-Fi Beats</div>
+                            <div class="playlist-subtitle">91 tracks • 5.5 hours</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liked Tracks Panel -->
+            <div class="panel liked-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Liked Tracks</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">Spotify</button>
+                        <button class="filter-btn">Youtube</button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="track-item">
+                        <div class="track-img"></div>
+                        <div class="track-info">
+                            <div class="track-title">Blinding Lights</div>
+                            <div class="track-artist">The Weeknd</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Levitating</div>
+                            <div class="track-artist">Dua Lipa</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Save Your Tears</div>
+                            <div class="track-artist">The Weeknd</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #fa709a, #fee140);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Peaches</div>
+                            <div class="track-artist">Justin Bieber</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #a8edea, #fed6e3);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Good 4 U</div>
+                            <div class="track-artist">Olivia Rodrigo</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #fbc2eb, #a6c1ee);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Heat Waves</div>
+                            <div class="track-artist">Glass Animals</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Stay</div>
+                            <div class="track-artist">The Kid LAROI, Justin Bieber</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);"></div>
+                        <div class="track-info">
+                            <div class="track-title">drivers license</div>
+                            <div class="track-artist">Olivia Rodrigo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Tracks Panel -->
+            <div class="panel search-panel">
+                <div class="panel-header">
+                    <div class="search-header-row">
+                        <div style="flex: 1;">
+                            <h2 class="panel-title">Search Tracks</h2>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active">All</button>
+                                <button class="filter-btn">Spotify</button>
+                                <button class="filter-btn">Youtube</button>
+                            </div>
+                        </div>
+                        <button class="search-btn">
+                            <span>🔍</span>
+                            <span>Search</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="track-item">
+                        <div class="track-img"></div>
+                        <div class="track-info">
+                            <div class="track-title">As It Was</div>
+                            <div class="track-artist">Harry Styles</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Anti-Hero</div>
+                            <div class="track-artist">Taylor Swift</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Flowers</div>
+                            <div class="track-artist">Miley Cyrus</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #fa709a, #fee140);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Unholy</div>
+                            <div class="track-artist">Sam Smith, Kim Petras</div>
+                        </div>
+                    </div>
+                    <div class="track-item">
+                        <div class="track-img" style="background: linear-gradient(135deg, #a8edea, #fed6e3);"></div>
+                        <div class="track-info">
+                            <div class="track-title">Calm Down</div>
+                            <div class="track-artist">Rema, Selena Gomez</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Playlist Panel -->
+            <div class="panel create-panel">
+                <div class="panel-header">
+                    <div class="create-header-row">
+                        <div style="flex: 1;">
+                            <h2 class="panel-title">Create Playlist</h2>
+                            <div class="filter-buttons">
+                                <button class="filter-btn active">All</button>
+                                <button class="filter-btn">Spotify</button>
+                                <button class="filter-btn">Youtube</button>
+                            </div>
+                        </div>
+                        <button class="create-btn">
+                            <span>Create Now</span>
+                            <span>➕</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <div class="playlist-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #667eea, #764ba2);">🎧</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">My New Mix</div>
+                            <div class="playlist-subtitle">0 tracks • Empty</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #f093fb, #f5576c);">✨</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Party Hits</div>
+                            <div class="playlist-subtitle">0 tracks • Empty</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">🌴</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Tropical Vibes</div>
+                            <div class="playlist-subtitle">0 tracks • Empty</div>
+                        </div>
+                        <div class="playlist-card">
+                            <div class="playlist-img" style="background: linear-gradient(135deg, #fa709a, #fee140);">🎹</div>
+                            <button class="play-btn">
+                                <div class="play-icon"></div>
+                            </button>
+                            <div class="playlist-title">Piano Classics</div>
+                            <div class="playlist-subtitle">0 tracks • Empty</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

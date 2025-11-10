@@ -1,5 +1,5 @@
 import { createContext, useState } from "react";
-import type { Playlist, Track } from "./App"; 
+import type { Playlist, Track } from "./App.tsx"; 
 
 type ContextType = {
   likedTracks: Track[];

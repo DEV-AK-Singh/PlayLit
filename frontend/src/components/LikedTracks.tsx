@@ -6,27 +6,21 @@ export default function LikedTracks() {
   const { likedTracks } = useMyContext();
   return (
     <>
-      <div className="sticky top-0 z-10 bg-slate-800 px-4 pt-4">
-        <h1 className="text-2xl font-semibold mb-2">Liked Tracks</h1>
-        <div className="flex gap-2 pb-1">
-          <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
-            All
-          </button>
-          <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
-            Spotify
-          </button>
-          <button className="rounded-lg bg-slate-700 px-4 py-1 text-xs font-medium text-white transition border border-slate-600 hover:border-slate-400">
-            Youtube
-          </button>
+      <div className="panel-header">
+        <h2 className="panel-title">Liked Tracks</h2>
+        <div className="filter-buttons">
+          <button className="filter-btn active">All</button>
+          <button className="filter-btn">Spotify</button>
+          <button className="filter-btn">Youtube</button>
         </div>
       </div>
-      <div className="p-4">
+      <div className="panel-content">
         {likedTracks.length ? (
           likedTracks.map((track: any) => (
             <TrackCard key={track.id} track={track} />
           ))
         ) : (
-          <Nothing />
+          <Nothing icon="❤️" text="No Liked Tracks" />
         )}
       </div>
     </>

@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { useMyContext } from "./components/ContextUtil";
-import { Outlet } from "react-router-dom";
-import LikedTracks from "./components/LikedTracks";
-import SearchTracks from "./components/SearchTracks";
-import QueueTracks from "./components/QueueTracks"; 
+import Home from "./components/Home";
+import { useMyContext } from "./components/ContextUtil"; 
 
 export type QueryType = {
   id: string;
@@ -39,10 +36,10 @@ export type Playlist = {
   platform: string;
 };
 
-export const milliSecondsToMinutesSeconds = (milliseconds: number) => {
+export const milliSecondsToMinutesSeconds = (milliseconds: number ) => {
   const minutes = Math.floor(milliseconds / 60000);
-  const seconds = Math.floor((milliseconds % 60000) / 1000);
-  return `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+  const seconds = Math.floor(((milliseconds % 60000) / 1000));
+  return `${minutes}:${(seconds < 10) ? "0" + seconds : seconds}`;
 };
 
 const cleanQuery = (query: string) => {
@@ -66,7 +63,9 @@ export const loadSearchedYoutubeTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `/api/youtube/me/search?q=${cleanQuery(query)}&limit=${limit}`,
+      `/api/youtube/me/search?q=${cleanQuery(
+        query
+      )}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${youtubeToken}`,
@@ -111,7 +110,9 @@ export const loadSearchedSpotifyTracks = async (
 ) => {
   try {
     const response = await fetch(
-      `/api/spotify/me/search?query=${cleanQuery(query)}&limit=${limit}`,
+      `/api/spotify/me/search?query=${cleanQuery(
+        query
+      )}&limit=${limit}`,
       {
         headers: {
           Authorization: `Bearer ${spotifyToken}`,
@@ -175,7 +176,7 @@ export const loadSearchedTracks = async (
     }
   } catch (error) {
     console.error(error);
-  }
+  } 
   let tracks: Track[] = [];
   if (youtubeTracks?.length > 0) {
     tracks = [...tracks, ...youtubeTracks];
@@ -255,18 +256,21 @@ export const createYoutubePlaylist = async (
   youtubeToken: string
 ) => {
   try {
-    const response = await fetch(`/api/youtube/me/playlists`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${youtubeToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: playlistName,
-        description: playlistDescription,
-        privacy: playlistPrivacy,
-      }),
-    });
+    const response = await fetch(
+      `/api/youtube/me/playlists`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${youtubeToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: playlistName,
+          description: playlistDescription,
+          privacy: playlistPrivacy,
+        }),
+      }
+    );
     const data = await response.json();
     console.log(data);
     return data.data;
@@ -317,19 +321,22 @@ export const createSpotifyPlaylist = async (
       console.error("User ID not found, connect to Spotify first.");
       return [];
     }
-    const response = await fetch(`/api/spotify/me/playlists`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${spotifyToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: playlistName,
-        description: playlistDescription,
-        privacy: playlistPrivacy === "public",
-        userId: userId,
-      }),
-    });
+    const response = await fetch(
+      `/api/spotify/me/playlists`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${spotifyToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: playlistName,
+          description: playlistDescription,
+          privacy: playlistPrivacy === "public",
+          userId: userId,
+        }),
+      }
+    );
     const data = await response.json();
     console.log(data);
     return data.data;
@@ -414,12 +421,15 @@ export const deletePlaylist = async (
     }
   } else if (platform === "youtube" && youtubeToken) {
     try {
-      const response = await fetch(`/api/youtube/me/playlists/${playlistId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${youtubeToken}`,
-        },
-      });
+      const response = await fetch(
+        `/api/youtube/me/playlists/${playlistId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${youtubeToken}`,
+          },
+        }
+      );
       const data = await response.json();
       console.log(data);
       return data.data;
@@ -433,7 +443,7 @@ export const deletePlaylist = async (
   }
 };
 
-export default function App() {
+function App() {
   const { setLikedTracks, setMyPlaylists } = useMyContext();
 
   const [youtubeToken, setYoutubeToken] = useState(
@@ -449,7 +459,7 @@ export default function App() {
   const [youtubeLikedTracks, setYoutubeLikedTracks] = useState([] as Track[]);
   const [spotifyLikedTracks, setSpotifyLikedTracks] = useState([] as Track[]);
   const [youtubePlaylists, setYoutubePlaylists] = useState([] as Playlist[]);
-  const [spotifyPlaylists, setSpotifyPlaylists] = useState([] as Playlist[]);
+  const [spotifyPlaylists, setSpotifyPlaylists] = useState([] as Playlist[]); 
 
   const connectYoutube = async () => {
     try {
@@ -494,11 +504,14 @@ export default function App() {
 
   const loadYoutubePlaylists = async () => {
     try {
-      const response = await fetch("/api/youtube/me/playlists", {
-        headers: {
-          Authorization: `Bearer ${youtubeToken}`,
-        },
-      });
+      const response = await fetch(
+        "/api/youtube/me/playlists",
+        {
+          headers: {
+            Authorization: `Bearer ${youtubeToken}`,
+          },
+        }
+      );
       const data = await response.json();
       setYoutubePlaylists(sortArrayByKey(data.data, "name"));
       console.log(data);
@@ -509,11 +522,14 @@ export default function App() {
 
   const loadYoutubeLikedTracks = async () => {
     try {
-      const response = await fetch("/api/youtube/me/liked", {
-        headers: {
-          Authorization: `Bearer ${youtubeToken}`,
-        },
-      });
+      const response = await fetch(
+        "/api/youtube/me/liked",
+        {
+          headers: {
+            Authorization: `Bearer ${youtubeToken}`,
+          },
+        }
+      );
       const data = await response.json();
       setYoutubeLikedTracks(sortArrayByKey(data.data, "name"));
       console.log(data);
@@ -565,11 +581,14 @@ export default function App() {
 
   const loadSpotifyPlaylists = async () => {
     try {
-      const response = await fetch("/api/spotify/me/playlists", {
-        headers: {
-          Authorization: `Bearer ${spotifyToken}`,
-        },
-      });
+      const response = await fetch(
+        "/api/spotify/me/playlists",
+        {
+          headers: {
+            Authorization: `Bearer ${spotifyToken}`,
+          },
+        }
+      );
       const data = await response.json();
       setSpotifyPlaylists(sortArrayByKey(data.data, "name"));
       console.log(data);
@@ -580,11 +599,14 @@ export default function App() {
 
   const loadSpotifyLikedTracks = async () => {
     try {
-      const response = await fetch("/api/spotify/me/liked", {
-        headers: {
-          Authorization: `Bearer ${spotifyToken}`,
-        },
-      });
+      const response = await fetch(
+        "/api/spotify/me/liked",
+        {
+          headers: {
+            Authorization: `Bearer ${spotifyToken}`,
+          },
+        }
+      );
       const data = await response.json();
       setSpotifyLikedTracks(sortArrayByKey(data.data, "name"));
       console.log(data);
@@ -631,60 +653,16 @@ export default function App() {
 
   return (
     <>
-      <header>
-        <div className="logo-section">
-          <div className="logo-icon"></div>
-          <div className="logo-text-container">
-            <h1 className="logo-text">PlayLit</h1>
-            <div className="logo-tagline">Music Synced</div>
-          </div>
-        </div>
-        <div className="header-actions">
-          <button className="btn" onClick={loadBothPlaylists}>
-            Refresh Playlists
-          </button>
-          <button className="btn" onClick={loadBothLikedTracks}>
-            Refresh Liked Tracks
-          </button>
-          <button className="btn" onClick={connectYoutube}>
-            <span className="status-dot yt-dot"></span>
-            <span>{youtubeUser ? "Connected YT!" : "Connect YouTube"}</span>
-          </button>
-          <button className="btn" onClick={connectSpotify}>
-            <span className="status-dot sp-dot"></span>
-            <span>{spotifyUser ? "Connected SP!" : "Connect Spotify"}</span>
-          </button>
-          <button className="btn btn-primary">
-            <span>
-              Hey{" "}
-              {youtubeUser && spotifyUser
-                ? spotifyUser.display_name
-                : youtubeUser
-                ? youtubeUser.display_name
-                : spotifyUser
-                ? spotifyUser.display_name
-                : "there!"}
-              👋
-            </span>
-          </button>
-        </div>
-      </header> 
-      <main>
-        <div className="grid-container">
-          <div className="panel playlists-panel h-full overflow-scroll">
-            <Outlet />
-          </div>
-          <div className="panel liked-panel">
-            <LikedTracks />
-          </div>
-          <div className="panel create-panel">
-            <QueueTracks />
-          </div>
-          <div className="panel search-panel">
-            <SearchTracks />
-          </div>
-        </div>
-      </main>
+      <Home
+        connectYoutube={connectYoutube}
+        youtubeUser={youtubeUser}
+        connectSpotify={connectSpotify}
+        spotifyUser={spotifyUser}
+        loadBothLikedTracks={loadBothLikedTracks}
+        loadBothPlaylists={loadBothPlaylists}
+      />
     </>
   );
 }
+
+export default App;
